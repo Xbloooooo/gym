@@ -205,7 +205,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-4";
+const VERSION = "2026.11.17-5";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -222,13 +222,17 @@ const LANES = [
   { key: "daypass", label: "Day-pass", venue: "Unity",       prefix: "unity_" }
 ];
 
-/* Cards. Only the two real ones for now; a lane shows up on the home screen once it has a card.
-   Ids still to come: legs, easy (home) · work_pull, work_push, work_legs, work_easy · unity_pull, unity_push.
+/* Cards. Pull and Push in each lane for now; a lane shows up on the home screen once it has a card.
+   Ids still to come: legs, easy (home) · work_legs, work_easy.
    Rests that have worked: main row/press 120 · assisted pull-up 150 · face pull / rear delt 90
    · arms 75 · easy finisher 60. */
 const ROUTINES = [
-  // Real card: Hevy routine "Comeback Pull" (hevy.com/routine/Sw3uOnimAp7), copied 17 Nov. No warm-up row in the source.
-  { id: "pull", name: "Comeback Pull", blurb: "Row 85 · assist 100 · face pull 25", exercises: [
+  // All six cards start as the same two Hevy routines by tanookit, copied 17 Nov: "Comeback Pull" (hevy.com/routine/Sw3uOnimAp7)
+  // and "Comeback Push" (hevy.com/routine/UqQ13NmZ6RU). Neither has a warm-up row; Push lists no loads.
+  // They are separate objects on purpose: a session graded at one gym changes that gym's card only.
+
+  // ---- Home ----
+  { id: "pull", name: "Home Pull", blurb: "Row 85 · assist 100 · face pull 25", exercises: [
     { name: "Seated cable row — V grip", sets: 3, repTarget: "10", rest: 120, target: "85", log: "cable", defaultWeight: 85, defaultReps: "10",
       note: "All sets top of range clean → bump next time." },
     { name: "Assisted pull-up", sets: 3, repTarget: "5", rest: 150, target: "assist 100", log: "assist", defaultWeight: 100, defaultReps: "5",
@@ -246,8 +250,7 @@ const ROUTINES = [
     { name: "Concentration curl", sets: 2, repTarget: "6", log: "db", defaultReps: "6", optional: true,
       cue: "Slow negative.", note: "Assisted lift." }
   ]},
-  // Real card: Hevy routine "Comeback Push" (hevy.com/routine/UqQ13NmZ6RU), copied 17 Nov. No loads and no warm-up row in the source.
-  { id: "push", name: "Comeback Push", blurb: "Loads not set yet — first session sets the openers", exercises: [
+  { id: "push", name: "Home Push", blurb: "Loads not set yet — first session sets the openers", exercises: [
     { name: "Dumbbell bench press", sets: 3, repTarget: "10-12", rest: 90, log: "db" },
     { name: "Seated cable chest fly", sets: 3, repTarget: "10", rest: 90, log: "cable", defaultReps: "10" },
     { name: "Incline dumbbell chest fly", sets: 3, repTarget: "10", rest: 90, log: "db", defaultReps: "10" },
@@ -259,6 +262,70 @@ const ROUTINES = [
     { name: "Barbell bench press", sets: 2, repTarget: "12", log: "bar", defaultReps: "12", cue: "Stretch · slow eccentric." },
     { name: "Push-up", sets: 2, rest: 60, log: "bodyweight", note: "Mechanical drop OK." }
   ]},
+
+  // ---- Work (office gym) ----
+  { id: "work_pull", name: "Work Pull", blurb: "Row 85 · assist 100 · face pull 25", exercises: [
+    { name: "Seated cable row — V grip", sets: 3, repTarget: "10", rest: 120, target: "85", log: "cable", defaultWeight: 85, defaultReps: "10",
+      note: "All sets top of range clean → bump next time." },
+    { name: "Assisted pull-up", sets: 3, repTarget: "5", rest: 150, target: "assist 100", log: "assist", defaultWeight: 100, defaultReps: "5",
+      note: "Chase a clean 3rd set. Ugly → more assist." },
+    { name: "Face pull", sets: 3, repTarget: "20", rest: 90, target: "25", log: "cable", defaultWeight: 25, defaultReps: "20",
+      cue: "Full finish, no shrug-cheat." },
+    { name: "Single-arm cable reverse fly", sets: 3, repTarget: "10", rest: 90, target: "12.5–15", log: "cable", defaultReps: "10",
+      note: "Slight-down OK." },
+    { name: "Cable bicep curl", sets: 3, repTarget: "15", rest: 75, target: "35–40, feel it out", log: "cable", defaultReps: "15",
+      note: "No fly handles." },
+    { name: "Seated incline dumbbell curl", sets: 2, repTarget: "6-12", rest: 75, target: "20–25 per hand", log: "db",
+      note: "Both DBs · 20–25, not 40." },
+    { name: "EZ bar biceps curl", sets: 3, repTarget: "10", rest: 45, target: "plates 2×10 + 2×2.5", log: "bar", defaultReps: "10", optional: true,
+      cue: "Strict.", note: "Plate math: 2×10, 2×2.5." },
+    { name: "Concentration curl", sets: 2, repTarget: "6", log: "db", defaultReps: "6", optional: true,
+      cue: "Slow negative.", note: "Assisted lift." }
+  ]},
+  { id: "work_push", name: "Work Push", blurb: "Loads not set yet — first session sets the openers", exercises: [
+    { name: "Dumbbell bench press", sets: 3, repTarget: "10-12", rest: 90, log: "db" },
+    { name: "Seated cable chest fly", sets: 3, repTarget: "10", rest: 90, log: "cable", defaultReps: "10" },
+    { name: "Incline dumbbell chest fly", sets: 3, repTarget: "10", rest: 90, log: "db", defaultReps: "10" },
+    { name: "Triceps pushdown", sets: 3, repTarget: "12", rest: 60, log: "cable", defaultReps: "12" },
+    { name: "Dumbbell lateral raise", sets: 3, repTarget: "10", rest: 60, log: "db", defaultReps: "10" },
+    { name: "Face pull", sets: 2, repTarget: "20", rest: 45, log: "cable", defaultReps: "20" },
+    { name: "Dumbbell triceps kickback", sets: 2, repTarget: "12", rest: 45, log: "db", defaultReps: "12" },
+    { name: "Single-arm cable crossover", sets: 2, repTarget: "15", rest: 45, log: "cable", defaultReps: "15", cue: "Burn · continuous." },
+    { name: "Barbell bench press", sets: 2, repTarget: "12", log: "bar", defaultReps: "12", cue: "Stretch · slow eccentric." },
+    { name: "Push-up", sets: 2, rest: 60, log: "bodyweight", note: "Mechanical drop OK." }
+  ]},
+
+  // ---- Day-pass (Unity) ----
+  { id: "unity_pull", name: "Unity Pull", blurb: "Row 85 · assist 100 · face pull 25", exercises: [
+    { name: "Seated cable row — V grip", sets: 3, repTarget: "10", rest: 120, target: "85", log: "cable", defaultWeight: 85, defaultReps: "10",
+      note: "All sets top of range clean → bump next time." },
+    { name: "Assisted pull-up", sets: 3, repTarget: "5", rest: 150, target: "assist 100", log: "assist", defaultWeight: 100, defaultReps: "5",
+      note: "Chase a clean 3rd set. Ugly → more assist." },
+    { name: "Face pull", sets: 3, repTarget: "20", rest: 90, target: "25", log: "cable", defaultWeight: 25, defaultReps: "20",
+      cue: "Full finish, no shrug-cheat." },
+    { name: "Single-arm cable reverse fly", sets: 3, repTarget: "10", rest: 90, target: "12.5–15", log: "cable", defaultReps: "10",
+      note: "Slight-down OK." },
+    { name: "Cable bicep curl", sets: 3, repTarget: "15", rest: 75, target: "35–40, feel it out", log: "cable", defaultReps: "15",
+      note: "No fly handles." },
+    { name: "Seated incline dumbbell curl", sets: 2, repTarget: "6-12", rest: 75, target: "20–25 per hand", log: "db",
+      note: "Both DBs · 20–25, not 40." },
+    { name: "EZ bar biceps curl", sets: 3, repTarget: "10", rest: 45, target: "plates 2×10 + 2×2.5", log: "bar", defaultReps: "10", optional: true,
+      cue: "Strict.", note: "Plate math: 2×10, 2×2.5." },
+    { name: "Concentration curl", sets: 2, repTarget: "6", log: "db", defaultReps: "6", optional: true,
+      cue: "Slow negative.", note: "Assisted lift." }
+  ]},
+  { id: "unity_push", name: "Unity Push", blurb: "Loads not set yet — first session sets the openers", exercises: [
+    { name: "Dumbbell bench press", sets: 3, repTarget: "10-12", rest: 90, log: "db" },
+    { name: "Seated cable chest fly", sets: 3, repTarget: "10", rest: 90, log: "cable", defaultReps: "10" },
+    { name: "Incline dumbbell chest fly", sets: 3, repTarget: "10", rest: 90, log: "db", defaultReps: "10" },
+    { name: "Triceps pushdown", sets: 3, repTarget: "12", rest: 60, log: "cable", defaultReps: "12" },
+    { name: "Dumbbell lateral raise", sets: 3, repTarget: "10", rest: 60, log: "db", defaultReps: "10" },
+    { name: "Face pull", sets: 2, repTarget: "20", rest: 45, log: "cable", defaultReps: "20" },
+    { name: "Dumbbell triceps kickback", sets: 2, repTarget: "12", rest: 45, log: "db", defaultReps: "12" },
+    { name: "Single-arm cable crossover", sets: 2, repTarget: "15", rest: 45, log: "cable", defaultReps: "15", cue: "Burn · continuous." },
+    { name: "Barbell bench press", sets: 2, repTarget: "12", log: "bar", defaultReps: "12", cue: "Stretch · slow eccentric." },
+    { name: "Push-up", sets: 2, rest: 60, log: "bodyweight", note: "Mechanical drop OK." }
+  ]}
 ];
 
 // Log law: what goes in the weight box.

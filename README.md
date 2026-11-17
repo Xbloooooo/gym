@@ -21,7 +21,7 @@ and `TARGETS` in the same commit. Then:
 
 Pages republishes in about a minute. Pages caches for 10 minutes; reload the phone until the version matches.
 
-Two cards so far: `pull` and `push`, the Hevy "Comeback Pull" / "Comeback Push" routines. A lane appears on the home screen once it has a card.
+Six cards so far: Pull and Push in each lane, all starting from the Hevy "Comeback Pull" / "Comeback Push" routines. They are separate objects; a session graded at one gym changes that gym's card only.
 
 ## Where the log lives
 
