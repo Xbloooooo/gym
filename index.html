@@ -205,7 +205,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-7";
+const VERSION = "2026.11.17-8";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -338,6 +338,31 @@ const LOG = {
   kb:         ["Kettlebell", "the bell"],
   bodyweight: ["Bodyweight", "reps or minutes — weight can stay blank"]
 };
+
+/* Numbered lists the save code leans on: it writes a card or a lift as its position here instead of its name.
+   APPEND ONLY. Never reorder, delete or reuse a line — every code already written down would then name the wrong
+   lift. A new or renamed lift gets a new line at the end (`node tools/check.js` says when one is missing).
+   A lift that is not listed still works; its name is spelled out in the code, which only costs letters. */
+const CARD_IDS = ["pull", "push", "legs", "easy", "work_pull", "work_push", "work_legs", "work_easy", "unity_pull", "unity_push"];
+const LIFTS = [
+  ["Seated cable row — V grip", "cable"],        // 1
+  ["Assisted pull-up", "assist"],
+  ["Face pull", "cable"],
+  ["Single-arm cable reverse fly", "cable"],
+  ["Cable bicep curl", "cable"],                 // 5
+  ["Seated incline dumbbell curl", "db"],
+  ["EZ bar biceps curl", "bar"],
+  ["Concentration curl", "db"],
+  ["Dumbbell bench press", "db"],
+  ["Seated cable chest fly", "cable"],           // 10
+  ["Incline dumbbell chest fly", "db"],
+  ["Triceps pushdown", "cable"],
+  ["Dumbbell lateral raise", "db"],
+  ["Dumbbell triceps kickback", "db"],
+  ["Single-arm cable crossover", "cable"],       // 15
+  ["Barbell bench press", "bar"],
+  ["Push-up", "bodyweight"]
+];
 
 /* =====================================================================
    State
@@ -640,7 +665,7 @@ function viewBackup() {
     '<p class="fine" style="margin-top:16px">Logs live only in this browser on this phone. <b id="persist"></b> A save code is the history as text you can keep anywhere.</p>' +
 
     '<section class="sec"><h2>Current code</h2>' + (NOTE ? '<div class="status" style="margin:0 0 12px">' + esc(NOTE) + "</div>" : "") +
-    '<p class="fine">Everything on this phone right now — ' + n + " workout" + (n === 1 ? "" : "s") + (S.draft ? " and the unfinished session" : "") + '. It is rebuilt whenever the history changes, so the latest copy replaces any older code.</p><textarea class="code" id="save-text" readonly aria-label="Save code">building…</textarea>' +
+    '<p class="fine">Every finished workout on this phone — ' + n + " of them" + '. It is rebuilt whenever the history changes, so the latest copy replaces any older code. It records what you lifted: card, date, and the weight and reps of each checked set. Card notes and targets are not in it' + (S.draft ? ", and neither is the unfinished session" : "") + '.</p><textarea class="code" id="save-text" readonly aria-label="Save code">building…</textarea>' +
     '<p class="fine" id="save-stats" style="margin-top:8px"></p><div class="stack"><button class="btn ink" data-act="copy-save" disabled>Copy save code</button>' +
     '<button class="btn quiet" data-act="save-image" disabled>Make save image</button></div><div class="shots" id="shots"></div></section>' +
 
@@ -653,7 +678,7 @@ function viewBackup() {
     '<div class="row2"><button class="btn quiet" data-act="export">Export</button><label class="btn quiet" tabindex="0">Import<input type="file" id="json-in" accept="application/json,.json"></label></div></section></div>';
   if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { const el = $("#persist"); if (el) el.textContent = p ? "The browser has marked this storage as persistent." : "The browser may clear it without asking."; }).catch(() => {});
   SAVE = null; NOTE = "";
-  encodeSave(S).then(sv => {
+  encodeSave(S.workouts).then(sv => {
     SAVE = sv; const ta = $("#save-text"); if (!ta) return;
     ta.value = sv.lines.map(showLine).join("\n");
     const pages = Math.ceil(sv.lines.length / PAGE);
@@ -727,58 +752,185 @@ function applyTheme() {
    belongs to and where: lines from many codes can arrive mixed, out of
    order or twice and still be sorted, a bad line is located and often
    repaired. A CRC-32 covers each code. Codes merge by workout.
+   No compatibility between formats before 1.0: bump FORMAT when the
+   record or the guessing changes, and old codes are simply not read.
    ===================================================================== */
 const A16 = "ACDEHKLNPRSTUXYZ", LINE = 40, CHK = 4, FULL = LINE + CHK, PAGE = 180;
 const utf8 = new TextEncoder(), utf8d = new TextDecoder();
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
 function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
 function chk16(str) { const v = crc32(utf8.encode(str)) & 0xFFFF; return A16[v >>> 12] + A16[v >>> 8 & 15] + A16[v >>> 4 & 15] + A16[v & 15]; }
-// Format 2 ties each line to its code (id = the body CRC). Format 1 (first day only) had no id; still readable.
-const lineCheck = (ver, id, idx, payload) => chk16(ver === 1 ? idx + ":" + payload : id + ":" + idx + ":" + payload);
+// The check ties each line to its code (id = the body CRC) and to its place in it.
+const lineCheck = (id, idx, payload) => chk16(id + ":" + idx + ":" + payload);
 function toLetters(u8) { let s = ""; for (let i = 0; i < u8.length; i++) s += A16[u8[i] >> 4] + A16[u8[i] & 15]; return s; }
 function fromLetters(s) { const u = new Uint8Array(s.length >> 1); for (let i = 0; i < u.length; i++) u[i] = A16.indexOf(s[2 * i]) << 4 | A16.indexOf(s[2 * i + 1]); return u; }
 const showLine = l => l.slice(0, -CHK).match(/.{1,5}/g).join(" ") + "  " + l.slice(-CHK);
-async function pipe(u8, stream) { return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(stream)).arrayBuffer()); }
 
-const secs = iso => { const t = Date.parse(iso); return isNaN(t) ? 0 : Math.round(t / 1000); };
-const iso = s => s ? new Date(s * 1000).toISOString() : undefined;
-function packSession(s) {
-  return [s.routineId || "", s.name || "", secs(s.startedAt), secs(s.finishedAt), s.note || "", (s.exercises || []).map(e => [
-    e.name || "", e.log || "", e.target || "", e.repTarget || "", e.rest || 0, e.note || "", e.cue || "", e.form || 0, (e.optional ? 1 : 0) | (e.skipped ? 2 : 0),
-    (e.sets || []).flatMap(x => [x.w == null ? "" : String(x.w), x.r == null ? "" : String(x.r), x.done ? 1 : 0])
-  ])];
+/* What a code holds: for each workout its card, start minute, length in minutes, the session note, and for each lift
+   the sets that were checked (weight x reps) plus whether it was skipped.
+   Left out on purpose, to keep codes short: unchecked sets, the unfinished session, the theme, seconds, and the card
+   text of the day (targets, cues, notes, rests). A workout that comes back from a code shows what was lifted, not
+   what the card said that day. The JSON export keeps everything.
+
+   How it gets short. Nothing is written as text if it can be a guess that turned out right:
+     - cards and lifts are their numbers in CARD_IDS and LIFTS (anything unlisted is spelled out);
+     - the list of lifts is guessed to be the one this card had last time;
+     - a weight is guessed to be the weight of the set before it, or what this lift opened with last time;
+     - reps are guessed to be what the same set got last time;
+     - a wrong guess is written as the step up or down from it.
+   A right guess costs a fraction of a bit, because the coder below learns how often each kind of guess is right.
+   The guesses use only what is earlier in the same code plus the two numbered lists, never the current text of a
+   card, so editing a card does not change what an old code means. */
+const EPOCH_MIN = Date.UTC(2020, 0, 1) / 60000;
+const startMin = w => Math.floor(Date.parse(w.startedAt) / 60000) || 0;
+const asNum = (t, scale) => scale === 4 ? (/^\d{1,6}(\.\d{1,2})?$/.test(t) && Number.isInteger(+t * 4) ? +t * 4 : null) : /^\d{1,4}$/.test(t) ? +t : null;   // weights in quarter units, reps whole
+const fmtNum = (n, scale) => String(n / scale);
+// The plain record of a log: exactly what a code carries, in a fixed shape. encode(canon) -> decode gives canon back.
+function canon(workouts) {
+  const T = (v, n) => utf8d.decode(utf8.encode(Array.from(String(v == null ? "" : v).trim()).slice(0, n).join(""))).trim(),
+    val = (v, scale) => { const t = T(v, 40), n = asNum(t, scale); return n == null ? t : fmtNum(n, scale); };
+  return workouts.map(w => {
+    const id = T(w.routineId, 60), listed = CARD_IDS.includes(id), t = Math.max(0, startMin(w) - EPOCH_MIN), fin = Date.parse(w.finishedAt);
+    return { c: id, cn: listed ? "" : T(w.name, 60), t, d: isNaN(fin) ? 0 : Math.min(60000, Math.max(1, Math.round(fin / 60000) - EPOCH_MIN - t)), n: T(w.note, 300),
+      x: (w.exercises || []).map(e => { const name = T(e.name, 80), s = e.skipped ? 1 : 0;
+        return { l: name, g: LIFTS.some(l => l[0] === name) ? "" : T(e.log, 20), o: e.optional ? 1 : 0, s, v: s ? [] : (e.sets || []).filter(x => x && x.done).map(x => [val(x.w, 4), val(x.r, 1)]) }; }) };
+  }).sort((a, b) => a.t - b.t);
 }
-function unpackSession(a) {
-  const s = { routineId: a[0], name: a[1], startedAt: iso(a[2]), note: a[4], exercises: a[5].map(e => {
-    const sets = []; for (let i = 0; i + 2 < e[9].length; i += 3) sets.push({ w: e[9][i], r: e[9][i + 1], done: !!e[9][i + 2] });
-    const o = { name: e[0], repTarget: e[3], rest: e[4], target: e[2], note: e[5], log: e[1], cue: e[6], form: e[7] || null, optional: !!(e[8] & 1), sets };
-    if (e[8] & 2) o.skipped = true; return o;
-  }) };
-  if (a[3]) s.finishedAt = iso(a[3]);
-  return s;
+function fromCanon(o) {
+  const r = routine(o.c), w = { routineId: o.c, name: o.cn || (r ? r.name : o.c), startedAt: new Date((o.t + EPOCH_MIN) * 60000).toISOString(), note: o.n };
+  if (o.d) w.finishedAt = new Date((o.t + o.d + EPOCH_MIN) * 60000).toISOString();
+  w.exercises = o.x.map(e => { const l = LIFTS.find(l => l[0] === e.l),
+    x = { name: e.l, repTarget: "", rest: 0, target: "", note: "", log: l ? l[1] : e.g, cue: "", form: null, optional: !!e.o, sets: e.v.map(v => ({ w: v[0], r: v[1], done: true })) };
+    if (e.s) x.skipped = true; return x; });
+  return w;
 }
-// A code for any set of workouts: the whole log, or a single workout kept like a receipt.
-async function encodeSave(st) {
-  let body = utf8.encode(JSON.stringify([1, st.theme === "stealth" ? 1 : 0, st.workouts.map(packSession), st.draft ? packSession(st.draft) : 0])), flags = 0;
-  if (window.CompressionStream) { try { const z = await pipe(body, new CompressionStream("deflate-raw")); if (z.length < body.length) { body = z; flags = 1; } } catch (e) {} }
-  const all = new Uint8Array(9 + body.length), c = crc32(body), n = body.length;
-  all.set([2, flags, c >>> 24, c >>> 16 & 255, c >>> 8 & 255, c & 255, n >>> 16 & 255, n >>> 8 & 255, n & 255]); all.set(body, 9);
+/* The range coder from LZMA. bit(k, b) writes one yes/no at close to its true cost: it keeps odds for every key k and
+   updates them as it goes, so a guess that is nearly always right costs nearly nothing. Whole-number arithmetic only,
+   so every browser produces the same letters. Given bytes it reads instead of writes; the same calls then return what
+   was written. */
+function coder(input) {
+  const P = new Map(), out = [], enc = !input;
+  let low = 0, range = 0xFFFFFFFF, cache = 0, pending = 1, code = 0, pos = 0;
+  if (!enc) for (let i = 0; i < 4; i++) code = code * 256 + (pos < input.length ? input[pos++] : 0);
+  const shift = () => {
+    if (low < 0xFF000000 || low >= 0x100000000) {
+      const carry = low >= 0x100000000 ? 1 : 0;
+      do { out.push(cache + carry & 255); cache = 255; } while (--pending);
+      cache = Math.floor(low / 0x1000000) & 255;
+    }
+    pending++; low = low % 0x1000000 * 256;
+  };
+  const bit = (k, b) => {
+    const p = P.get(k) || 1024, bound = (range >>> 11) * p;
+    if (enc ? !b : code < bound) { range = bound; P.set(k, p + (2048 - p >> 4)); b = 0; }
+    else { if (enc) low += bound; else code -= bound; range -= bound; P.set(k, p - (p >> 4)); b = 1; }
+    while (range < 0x1000000) { range *= 256; if (enc) shift(); else code = code * 256 + (pos < input.length ? input[pos++] : 0); }
+    return b;
+  };
+  const num = (k, v) => {                  // a whole number >= 0: how many bits it has, then the bits
+    const n = enc ? v + 1 : 0, len = enc ? 31 - Math.clz32(n) : 0; let i = 0, m = 1;
+    while (bit(k + "u" + Math.min(i, 12), enc ? i < len : 0)) if (++i > 30) throw new Error("it cannot be read");
+    for (let j = i - 1; j >= 0; j--) m = m * 2 + bit(k + "b" + i + (i <= 7 ? ":" + m : "." + j), enc ? n >> j & 1 : 0);
+    return m - 1;
+  };
+  const str = (k, s) => {
+    const b = enc ? utf8.encode(s) : null, n = num(k + "#", enc ? b.length : 0);
+    if (n > 4000) throw new Error("it cannot be read");
+    const o = new Uint8Array(n);
+    for (let i = 0; i < n; i++) { let m = 1; for (let j = 7; j >= 0; j--) m = m * 2 + bit(k + m, enc ? b[i] >> j & 1 : 0); o[i] = m & 255; }
+    return enc ? s : utf8d.decode(o);
+  };
+  const end = () => {                      // pick the roundest number in range, so the tail is zeros that need not be written
+    low = Math.ceil(low / 0x1000000) * 0x1000000; for (let i = 0; i < 5; i++) shift();
+    let n = out.length; while (n > 1 && !out[n - 1]) n--;
+    return new Uint8Array(out.slice(1, n));
+  };
+  return { enc, bit, num, str, end };
+}
+// One walk for both directions, so writing and reading cannot drift apart: with a list it writes it, without one it
+// reads and returns it. Every guess is made from `out`, the part already written or read.
+function logCodec(io, list) {
+  const enc = io.enc, out = [], lastList = new Map(), mem = new Map(), bad = () => { throw new Error("it cannot be read"); };
+  const value = (k, v, guess, scale, alt) => {      // a weight or a rep count: blank, a number, or free text
+    if (guess != null && io.bit(k + "=", enc ? v === guess : 0)) return guess;
+    if (alt != null && alt !== guess && io.bit(k + "~", enc ? v === alt : 0)) return alt;
+    const n = enc ? asNum(v, scale) : null, base = guess != null ? guess : alt, g = base == null ? null : asNum(base, scale);
+    if (io.bit(k + "t", enc ? n == null : 0)) return io.bit(k + "e", enc ? v !== "" : 0) ? io.str(k + "s", v) : "";
+    let r;
+    if (g == null) r = io.num(k + "n", n);
+    else if (io.bit(k + "v", enc ? n < g : 0)) r = g - 1 - io.num(k + "-", enc ? g - 1 - n : 0);
+    else r = g + 1 + io.num(k + "+", enc ? n - g - 1 : 0);
+    if (r < 0) bad();
+    return fmtNum(r, scale);
+  };
+  const sig = x => x.map(e => e.l + "\u0001" + e.g + "\u0001" + e.o).join("\u0002");
+  const count = io.num("N", enc ? list.length : 0); let prevT = 0, prevCard = 0;
+  if (count > 50000) bad();
+  for (let a = 0; a < count; a++) {
+    const w = enc ? list[a] : null, o = {};
+    const ci = io.num("c" + prevCard, enc ? CARD_IDS.indexOf(w.c) + 1 : 0); prevCard = ci;
+    if (ci) { o.c = CARD_IDS[ci - 1] || "card-" + ci; o.cn = ""; } else { o.c = io.str("ci", enc ? w.c : ""); o.cn = io.str("cn", enc ? w.cn : ""); }
+    // when: whole days since the workout before, then the minute of the day (its hour is learned, its minute is not)
+    const day = Math.floor(prevT / 1440) + io.num("D", enc ? Math.floor(w.t / 1440) - Math.floor(prevT / 1440) : 0); let m = 1;
+    for (let j = 10; j >= 0; j--) m = m * 2 + io.bit("m" + (j > 5 ? m : -j), enc ? w.t % 1440 >> j & 1 : 0);
+    o.t = day * 1440 + (m & 2047); if ((m & 2047) >= 1440 || o.t < prevT) bad(); prevT = o.t;
+    o.d = io.num("d", enc ? w.d : 0);
+    o.n = io.bit("n?", enc ? w.n !== "" : 0) ? io.str("n", enc ? w.n : "") : "";
+    // which lifts: the same list as this card had last time, or spelled out
+    const q = lastList.get(o.c);
+    if (q && io.bit("L=", enc ? sig(w.x) === sig(q) : 0)) o.x = q.map(e => ({ l: e.l, g: e.g, o: e.o }));
+    else {
+      const n = io.num("L#", enc ? w.x.length : 0); let pl = 0; if (n > 300) bad(); o.x = [];
+      for (let i = 0; i < n; i++) {
+        const e = enc ? w.x[i] : null, li = io.num("l" + pl, enc ? LIFTS.findIndex(l => l[0] === e.l) + 1 : 0), r = {}; pl = li;
+        if (li) { r.l = (LIFTS[li - 1] || ["lift-" + li])[0]; r.g = ""; } else { r.l = io.str("ln", enc ? e.l : ""); r.g = io.str("lg", enc ? e.g : ""); }
+        r.o = io.bit("o" + li, enc ? e.o : 0); o.x.push(r);
+      }
+    }
+    // what was done on each
+    o.x.forEach((r, i) => {
+      const e = enc ? w.x[i] : null, key = o.c + "\u0001" + r.l, was = mem.get(key), old = was ? was.v : [];
+      r.s = io.bit("s" + (was ? was.s : 2) + r.o, enc ? e.s : 0); r.v = [];
+      if (!r.s) {
+        const n = old.length && io.bit("#=", enc ? e.v.length === old.length : 0) ? old.length : io.num("#", enc ? e.v.length : 0);
+        if (n > 300) bad();
+        for (let j = 0; j < n; j++) {
+          const x = enc ? e.v[j] : [], k = j ? 1 : 0, before = j ? r.v[j - 1] : null, then = old[j] || null;
+          const wv = value("w" + k, x[0], before ? before[0] : old[0] ? old[0][0] : null, 4, before && then ? then[0] : null);
+          const rv = value("r" + k, x[1], then ? then[1] : null, 1, before ? before[1] : null);
+          r.v.push([wv, rv]);
+        }
+      }
+      mem.set(key, { s: r.s, v: r.s ? old : r.v });
+    });
+    lastList.set(o.c, o.x); out.push(o);
+  }
+  return out;
+}
+// The code for a list of workouts. Header, 7 bytes: format, CRC-32 of the body, body length.
+const HEAD = 7, FORMAT = 4;
+async function encodeSave(workouts) {
+  const plain = canon(workouts), io = coder(null); logCodec(io, plain);
+  const body = io.end(), c = crc32(body), n = body.length;
+  if (n > 65535) throw new Error("the history is too long for one code");
+  if (JSON.stringify(logCodec(coder(body))) !== JSON.stringify(plain)) throw new Error("it did not read back the same, so it is not safe to keep. Use the JSON export and tell whoever maintains this page");
+  const all = new Uint8Array(HEAD + n); all.set([FORMAT, c >>> 24, c >>> 16 & 255, c >>> 8 & 255, c & 255, n >>> 8, n & 255]); all.set(body, HEAD);
   const letters = toLetters(all), lines = [];
-  for (let i = 0; i < letters.length; i += LINE) { const p = letters.slice(i, i + LINE); lines.push(p + lineCheck(2, c, lines.length, p)); }
+  for (let i = 0; i < letters.length; i += LINE) { const p = letters.slice(i, i + LINE); lines.push(p + lineCheck(c, lines.length, p)); }
   return { lines, chars: letters.length + lines.length * CHK, text: lines.map(showLine).join("\n") };
 }
-// Is this raw line the first line of a code? It carries the header: format, flags, body CRC, body length.
+// Is this raw line the first line of a code? It carries the header.
 function readHead(raw) {
-  if (raw.length < 18 + CHK) return null;
-  const b = fromLetters(raw.slice(0, 18)), ver = b[0];
-  if (ver !== 1 && ver !== 2) return null;
-  const id = (b[2] << 24 | b[3] << 16 | b[4] << 8 | b[5]) >>> 0, chars = (9 + (b[6] << 16 | b[7] << 8 | b[8])) * 2, total = Math.ceil(chars / LINE);
+  if (raw.length < HEAD * 2 + CHK) return null;
+  const b = fromLetters(raw.slice(0, HEAD * 2));
+  if (b[0] !== FORMAT) return null;
+  const id = (b[1] << 24 | b[2] << 16 | b[3] << 8 | b[4]) >>> 0, chars = (HEAD + (b[5] << 8 | b[6])) * 2, total = Math.ceil(chars / LINE);
   const lastLen = chars - (total - 1) * LINE + CHK;
-  if (raw.length !== (total === 1 ? lastLen : FULL) || lineCheck(ver, id, 0, raw.slice(0, -CHK)) !== raw.slice(-CHK)) return null;
-  return { ver, id, total, lastLen, key: ver + ":" + id + ":" + chars, line0: raw, got: new Map([[0, raw]]), bad: new Map(), repaired: 0 };
+  if (raw.length !== (total === 1 ? lastLen : FULL) || lineCheck(id, 0, raw.slice(0, -CHK)) !== raw.slice(-CHK)) return null;
+  return { id, total, lastLen, key: id + ":" + chars, line0: raw, got: new Map([[0, raw]]), bad: new Map(), repaired: 0 };
 }
 const want = (c, i) => i === c.total - 1 ? c.lastLen : FULL;
-const lineOk = (c, i, raw) => raw.length === want(c, i) && lineCheck(c.ver, c.id, i, raw.slice(0, -CHK)) === raw.slice(-CHK);
+const lineOk = (c, i, raw) => raw.length === want(c, i) && lineCheck(c.id, i, raw.slice(0, -CHK)) === raw.slice(-CHK);
 function fixes(raw, len, ok) {             // every one-letter change (wrong, missing or extra letter) that makes the line check out
   const out = new Set(), n = raw.length, t = c => { if (ok(c)) out.add(c); };
   if (n === len) for (let i = 0; i < n; i++) for (const ch of A16) { if (ch !== raw[i]) t(raw.slice(0, i) + ch + raw.slice(i + 1)); }
@@ -842,26 +994,21 @@ function assemble(blocks) {
 }
 async function decodeSave(c) {
   let letters = ""; for (let i = 0; i < c.total; i++) letters += c.got.get(i).slice(0, -CHK);
-  const all = fromLetters(letters), n = all[6] << 16 | all[7] << 8 | all[8]; let body = all.subarray(9, 9 + n);
+  const all = fromLetters(letters), n = all[5] << 8 | all[6], body = all.subarray(HEAD, HEAD + n);
   if (body.length !== n || crc32(body) !== c.id) throw new Error("it does not add up (checksum mismatch), one line is wrong");
-  if (all[1] & 1) { if (!window.DecompressionStream) throw new Error("this browser is too old to unpack it"); body = await pipe(body, new DecompressionStream("deflate-raw")); }
-  const p = JSON.parse(utf8d.decode(body));
-  if (!Array.isArray(p) || p[0] !== 1) throw new Error("unknown contents");
-  return { theme: p[1] ? "stealth" : "default", workouts: p[2].map(unpackSession), draft: p[3] ? unpackSession(p[3]) : null };
+  return logCodec(coder(body)).map(fromCanon);
 }
 
 /* ---------- merging ---------- */
-const wkey = w => (w.routineId || "") + "|" + secs(w.startedAt);        // one workout = one card started at one second
+const wkey = w => (w.routineId || "") + "|" + startMin(w);              // one workout = one card started in one minute
 const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
-function planMerge(states) {
-  const have = new Set(S.workouts.map(wkey)), add = []; let dupes = 0, draft = null;
-  for (const st of states) for (const w of st.workouts) { const k = wkey(w); if (have.has(k)) dupes++; else { have.add(k); add.push(w); } }
-  if (!S.draft) for (const st of states) if (st.draft && !have.has(wkey(st.draft)) && (!draft || secs(st.draft.startedAt) > secs(draft.startedAt))) draft = st.draft;
-  return { add, dupes, draft };
+function planMerge(lists) {
+  const have = new Set(S.workouts.map(wkey)), add = []; let dupes = 0;
+  for (const list of lists) for (const w of list) { const k = wkey(w); if (have.has(k)) dupes++; else { have.add(k); add.push(w); } }
+  return { add, dupes };
 }
 function applyMerge(plan) {
-  S.workouts = S.workouts.concat(plan.add).sort((a, b) => secs(a.startedAt) - secs(b.startedAt));
-  if (plan.draft) S.draft = plan.draft;
+  S.workouts = S.workouts.concat(plan.add).sort((a, b) => startMin(a) - startMin(b));
   S.backup = { at: S.backup && S.backup.at || new Date().toISOString(), n: (S.backup && S.backup.n || 0) + plan.add.length };   // these came out of a code you hold
   save();
 }
@@ -877,7 +1024,11 @@ function say(html, bad) { const el = $("#load-status"); if (el) { el.innerHTML =
 // Read every code in the blocks, merge the readable ones into the log, say plainly what could not be read.
 async function addFromCodes(blocks) {
   const codes = assemble(blocks);
-  if (!codes.length) { say("No save code found in that. A code is recognised by its first line, so the top of it has to be included.", true); return false; }
+  if (!codes.length) {
+    const old = blocks.some(b => b.some(l => l.length >= 30 && [...l].every(ch => A16.includes(ch))));
+    say(old ? "Those letters are not a code this version can read. If it was copied from an earlier version of this page, it is in an old format: codes are not carried across versions yet." :
+      "No save code found in that. A code is recognised by its first line, so the top of it has to be included.", true); return false;
+  }
   const good = [], broken = [];
   for (const c of codes) {
     if (c.missing.length) { broken.push(c); continue; }
@@ -895,9 +1046,8 @@ async function addFromCodes(blocks) {
   if (!good.length) { say(trouble, true); return false; }
   const plan = planMerge(good), inCodes = plan.add.length + plan.dupes;
   const read = "Read " + plural(good.length, "code") + " holding " + plural(inCodes, "workout") + (repaired ? " (" + plural(repaired, "line") + " repaired)" : "") + ". ";
-  if (!plan.add.length && !plan.draft) { say(read + "Nothing new: " + (inCodes === 1 ? "it is" : "all of them are") + " already on this phone. " + trouble, !!broken.length); return false; }
-  const ask = "Add " + plural(plan.add.length, "workout") + " to the " + S.workouts.length + " on this phone?" + (plan.dupes ? " " + plural(plan.dupes, "duplicate") + " skipped." : "") +
-    (plan.draft ? " Also brings back the unfinished " + plan.draft.name + "." : "");
+  if (!plan.add.length) { say(read + "Nothing new: " + (inCodes === 1 ? "it is" : "all of them are") + " already on this phone. " + trouble, !!broken.length); return false; }
+  const ask = "Add " + plural(plan.add.length, "workout") + " to the " + S.workouts.length + " on this phone?" + (plan.dupes ? " " + plural(plan.dupes, "duplicate") + " skipped." : "");
   if (!confirm(ask)) { say(read + "Nothing was added. " + trouble, !!broken.length); return false; }
   applyMerge(plan);
   const done = "Added " + plural(plan.add.length, "workout") + (plan.dupes ? ", " + plural(plan.dupes, "duplicate") + " skipped" : "");

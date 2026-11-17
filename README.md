@@ -12,11 +12,14 @@ Everything a session reads is at the top of the script in `index.html`:
 - `TARGETS` — the "Due next" card on the home screen. Written by hand when a session is graded.
 - `LANES` — Home / Work / Day-pass. A routine belongs to a lane by its id prefix (`work_`, `unity_`, none = home).
 - `ROUTINES` — the cards. Same object shape as the design doc, so an existing `ROUTINES` array pastes straight in.
+- `CARD_IDS`, `LIFTS` — numbered lists the save code uses in place of names. **Append only**: a new or renamed lift
+  gets a new line at the end, and no line is ever reordered, removed or reused, or codes already written down
+  would name the wrong lift. A lift missing from the list still works; its name is spelled out in the code.
 
 When open loads change, change the exercise (`defaultWeight`, `defaultReps`, `target`, `note`), the routine `blurb`
 and `TARGETS` in the same commit. Then:
 
-    node tools/check.js          # syntax check of the inline script
+    node tools/check.js          # syntax check, and says which cards or lifts are missing from the numbered lists
     git commit -am "..." && git push
 
 Pages republishes in about a minute. Pages caches for 10 minutes; reload the phone until the version matches.
@@ -36,33 +39,68 @@ Six cards so far: Pull and Push in each lane, all starting from the Hevy "Comeba
 
 History → Backup & restore.
 
-- **Current code** — everything on the phone as letters, one code that can cover any number of days. It is rebuilt
-  whenever the history changes, so the latest copy replaces any older code.
+- **Current code** — every finished workout on the phone as letters, one code that can cover any number of days. It
+  is rebuilt whenever the history changes, so the latest copy replaces any older code.
 - **Codes add up.** Add a code, then another, or paste several together, in any order, with other text around them, and
   the workouts in them are added to what is on the phone. A workout already there is skipped (same card, same start
-  second), so overlapping codes and pasting twice are harmless. Nothing on the phone is removed. If the phone has
-  no unfinished session, the newest one found in the codes comes along.
+  minute), so overlapping codes and pasting twice are harmless. Nothing on the phone is removed, and the phone's own
+  copy of a workout is never swapped for the thinner one in a code.
 - **Save image** — the full code drawn as a PNG. The exact text also rides inside the file (a `tEXt` chunk), so the
   original image reads back without OCR. A screenshot or a re-compressed copy is read by OCR. Several images can be
   picked at once; screenshots of different codes merge the same way pasted text does.
-- **JSON file** — raw export/import. Import accepts a file that is just `{ workouts, draft }`, which is how the log
-  comes over from the old tracker. Importing a file is the one thing that *replaces* the log, after a confirm.
+- **JSON file** — raw export/import, the only complete copy. Import accepts a file that is just `{ workouts, draft }`,
+  which is how the log comes over from the old tracker. Importing a file is the one thing that *replaces* the log,
+  after a confirm.
 
-### Save code format
+### What a code holds, and what it leaves out
 
-    payload = JSON [1, theme, workouts[], draft]   (sessions packed as arrays, times in epoch seconds)
-    bytes   = [2, flags, crc32(body) x4, len(body) x3] + body     flags bit 0: body is deflate-raw
+Held: for each workout the card, the start minute, the length in minutes, the session note, and for each lift the
+checked sets (weight x reps), whether it was optional and whether it was skipped.
+
+Left out, to keep it short: unchecked sets, the unfinished session, the theme, seconds, and the card text of the day
+(target, cue, note, rep target, rest, form link). A workout that comes back from a code shows what was lifted, not
+what the card said that day.
+
+Weights are kept exactly when they are a multiple of 0.25 up to 999999.75, reps when they are a whole number up to
+9999; anything else typed in those boxes is kept as text (up to 40 characters), which costs more letters. Notes are
+kept up to 300 characters. Dates before 2020 are not representable.
+
+### Save code format (format 4)
+
+There is no compatibility between formats before 1.0: a code is read only by the format that wrote it. When the
+format changes, copy a fresh code from the new page (the log on the phone is not affected by a format change).
+
+    record  = the list above, per workout, sorted by start time            canon()
+    body    = the record through an adaptive range coder                    logCodec(), coder()
+    bytes   = [4, crc32(body) x4, len(body) x2] + body
     letters = 2 per byte from "ACDEHKLNPRSTUXYZ"
     lines   = 40 letters + 4 check letters (crc32 of "<body crc>:<line number>:<letters>", low 16 bits)
+
+The body is short because almost everything is written as a guess that turned out right:
+
+- a card or a lift is its number in `CARD_IDS` / `LIFTS`;
+- the list of lifts is guessed to be the one that card had last time;
+- a weight is guessed to be the weight of the set before it, or what that lift opened with last time on that card;
+- reps are guessed to be what the same set got last time;
+- a wrong guess is written as the step up or down from the guess.
+
+The coder (the binary range coder from LZMA, whole-number arithmetic only) learns how often each kind of guess is
+right, so a right one costs a fraction of a bit. Guesses use only what is earlier in the same code plus the two
+numbered lists, never the current text of a card, so editing a card does not change what an old code means.
+One function walks the record for both writing and reading, and every code is read back and compared before it is
+shown; if that ever fails the page says so instead of showing a code.
+
+Measured with the current cards: one workout is 3–4 lines (about 100 letters). With steady loads and reps that wobble,
+20 workouts are about 860 letters and 150 workouts about 3,900 (88 lines); with loads picked at random every time,
+150 workouts are about 5,500. The first format needed 1,212 letters for one workout and 20,788 for 150.
 
 Only those 16 letters are used because Tesseract does not confuse them with one another; with digits mixed in it
 misread up to half the lines in testing. The check letters tie every line to its code and its place in it, so lines
 from many codes can arrive mixed, out of order or twice and still be sorted; a missing line is named, and a single
 wrong, dropped or doubled letter is repaired. The CRC-32 covers each code. Lines with digits in them are treated as
-prose and ignored. Format 1 (first day; check was "<line number>:<letters>") is still read.
-A code keeps the fields in the design doc's session shape; anything else on a session is only in the JSON export.
+prose and ignored.
 
-A code for one workout is 19–30 lines with the current cards; a phone screenshot shows about 50 lines. A save image holds 180 lines.
+A phone screenshot shows about 50 lines. A save image holds 180 lines.
 
 ## Files
 
@@ -70,7 +108,7 @@ A code for one workout is 19–30 lines with the current cards; a phone screensh
     manifest.webmanifest   name and icons for Add to Home Screen
     fonts/                 Barlow, Barlow Condensed (OFL 1.1), Cousine (Apache 2.0)
     ocr/                   tesseract.js 7.0.0, tesseract.js-core 7.0.0, English data (Apache 2.0); loaded only when an image is read
-    tools/check.js         syntax check
+    tools/check.js         syntax check, and checks the cards against the numbered lists
     tools/make_icons.py    redraws the icons
 
 No build step. Not offline: the page has to load from the network.
