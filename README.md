@@ -21,7 +21,7 @@ and `TARGETS` in the same commit. Then:
 
 Pages republishes in about a minute. Pages caches for 10 minutes; reload the phone until the version matches.
 
-`pull` and `push` are the real Hevy "Comeback Pull" / "Comeback Push" cards. The other cards are starters: placeholder exercise names, loads unset.
+Two cards so far: `pull` and `push`, the Hevy "Comeback Pull" / "Comeback Push" routines. A lane appears on the home screen once it has a card.
 
 ## Where the log lives
 

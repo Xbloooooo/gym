@@ -205,7 +205,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-3";
+const VERSION = "2026.11.17-4";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -222,9 +222,9 @@ const LANES = [
   { key: "daypass", label: "Day-pass", venue: "Unity",       prefix: "unity_" }
 ];
 
-/* STARTER CARDS, except where a card is marked real. Starter exercise names are placeholders with loads unset —
-   replace with the real cards. Warm-ups are first and never optional.
-   Rests: main row/press 120 · assisted pull-up 150 · face pull / rear delt 90
+/* Cards. Only the two real ones for now; a lane shows up on the home screen once it has a card.
+   Ids still to come: legs, easy (home) · work_pull, work_push, work_legs, work_easy · unity_pull, unity_push.
+   Rests that have worked: main row/press 120 · assisted pull-up 150 · face pull / rear delt 90
    · arms 75 · easy finisher 60. */
 const ROUTINES = [
   // Real card: Hevy routine "Comeback Pull" (hevy.com/routine/Sw3uOnimAp7), copied 17 Nov. No warm-up row in the source.
@@ -259,61 +259,6 @@ const ROUTINES = [
     { name: "Barbell bench press", sets: 2, repTarget: "12", log: "bar", defaultReps: "12", cue: "Stretch · slow eccentric." },
     { name: "Push-up", sets: 2, rest: 60, log: "bodyweight", note: "Mechanical drop OK." }
   ]},
-  { id: "legs", name: "Legs", blurb: "Starter card — loads not set", exercises: [
-    { name: "Bodyweight squat (warm-up)", sets: 2, repTarget: "12", rest: 60, log: "bodyweight" },
-    { name: "Goblet squat", sets: 3, repTarget: "8-12", rest: 120, log: "kb" },
-    { name: "Romanian deadlift", sets: 3, repTarget: "8-12", rest: 120, log: "db" },
-    { name: "Split squat", sets: 3, repTarget: "8-10", rest: 90, log: "db" },
-    { name: "Calf raise", sets: 3, repTarget: "12-15", rest: 60, log: "bodyweight" }
-  ]},
-  { id: "easy", name: "Easy", blurb: "Starter card — loads not set", exercises: [
-    { name: "Walk", sets: 1, repTarget: "20 min", rest: 60, log: "bodyweight" },
-    { name: "Dead hang", sets: 2, repTarget: "30 s", rest: 60, log: "bodyweight" },
-    { name: "Plank", sets: 2, repTarget: "45 s", rest: 60, log: "bodyweight" }
-  ]},
-
-  { id: "work_pull", name: "Work Pull", blurb: "Starter card — only the row is set (130)", exercises: [
-    { name: "Seated row (warm-up)", sets: 1, repTarget: "12", rest: 60, log: "cable" },
-    { name: "Seated row", sets: 3, repTarget: "10-12", rest: 120, target: "130", log: "cable", defaultWeight: 130, defaultReps: "12" },
-    { name: "Assisted pull-up", sets: 3, repTarget: "6-10", rest: 150, log: "assist" },
-    { name: "Face pull", sets: 3, repTarget: "12-15", rest: 90, log: "cable" },
-    { name: "Single-arm rear delt", sets: 2, repTarget: "12-15", rest: 90, log: "cable" },
-    { name: "Cable curl", sets: 3, repTarget: "10-12", rest: 75, log: "cable" }
-  ]},
-  { id: "work_push", name: "Work Push", blurb: "Starter card — loads not set", exercises: [
-    { name: "Chest press (warm-up)", sets: 1, repTarget: "12", rest: 60, log: "machine" },
-    { name: "Chest press", sets: 3, repTarget: "8-12", rest: 120, log: "machine" },
-    { name: "Shoulder press", sets: 3, repTarget: "8-12", rest: 120, log: "machine" },
-    { name: "Assisted dip", sets: 3, repTarget: "6-10", rest: 150, log: "assist" },
-    { name: "Triceps pushdown", sets: 3, repTarget: "10-12", rest: 75, log: "cable" }
-  ]},
-  { id: "work_legs", name: "Work Legs", blurb: "Starter card — loads not set", exercises: [
-    { name: "Leg press (warm-up)", sets: 1, repTarget: "12", rest: 60, log: "machine" },
-    { name: "Leg press", sets: 3, repTarget: "8-12", rest: 120, log: "machine" },
-    { name: "Smith squat", sets: 3, repTarget: "8-10", rest: 120, log: "bar", note: "Bar not weighed — log added plates only." },
-    { name: "Leg curl", sets: 3, repTarget: "10-12", rest: 90, log: "machine" },
-    { name: "Calf raise", sets: 3, repTarget: "12-15", rest: 60, log: "machine" }
-  ]},
-  { id: "work_easy", name: "Work Easy", blurb: "Starter card — loads not set", exercises: [
-    { name: "Treadmill walk", sets: 1, repTarget: "15 min", rest: 60, log: "bodyweight" },
-    { name: "Face pull", sets: 2, repTarget: "15", rest: 90, log: "cable" },
-    { name: "Plank", sets: 2, repTarget: "45 s", rest: 60, log: "bodyweight" }
-  ]},
-
-  { id: "unity_pull", name: "Unity Pull", blurb: "Starter card — loads not set", exercises: [
-    { name: "Lat pulldown (warm-up)", sets: 1, repTarget: "12", rest: 60, log: "cable" },
-    { name: "Lat pulldown", sets: 3, repTarget: "8-12", rest: 120, log: "cable" },
-    { name: "Seated row", sets: 3, repTarget: "10-12", rest: 120, log: "cable" },
-    { name: "Face pull", sets: 3, repTarget: "12-15", rest: 90, log: "cable" },
-    { name: "Cable curl", sets: 3, repTarget: "10-12", rest: 75, log: "cable" }
-  ]},
-  { id: "unity_push", name: "Unity Push", blurb: "Starter card — loads not set", exercises: [
-    { name: "Chest press (warm-up)", sets: 1, repTarget: "12", rest: 60, log: "machine" },
-    { name: "Chest press", sets: 3, repTarget: "8-12", rest: 120, log: "machine" },
-    { name: "Shoulder press", sets: 3, repTarget: "8-12", rest: 120, log: "machine" },
-    { name: "Assisted dip", sets: 3, repTarget: "6-10", rest: 150, log: "assist" },
-    { name: "Triceps pushdown", sets: 3, repTarget: "10-12", rest: 75, log: "cable" }
-  ]}
 ];
 
 // Log law: what goes in the weight box.
