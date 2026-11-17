@@ -223,7 +223,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-11";
+const VERSION = "2026.11.17-12";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -456,7 +456,8 @@ const ICON = {
    - A new session starts as a copy of the last time this card was done: same weight and same reps, set by set.
      History beats the card's defaultWeight/defaultReps; those only fill a lift that has never been logged on this card.
      Loads never come from another card, so one gym's pins do not leak into another's.
-   - A lift with no history and no defaultWeight opens at the number its target text starts with ("12.5–15" -> 12.5).
+   - A lift with no history and no defaultWeight opens at the number its target text starts with ("12.5–15" -> 12.5);
+     with no defaultReps it opens at the bottom of its rep range ("10-12" -> 10).
    - The set you are on is the first unchecked one. It gets nudge buttons: weight by one plate, reps by one.
    - A plate is 5, except dumbbells up to 25 and cables under 20 or sitting on a half step, which move by 2.5.
      A card can say otherwise with `step` on the exercise.
@@ -525,7 +526,7 @@ function nudge(e, exEl, j, field, d) {
     if (to == null) return;
     setWeight(e, exEl, j, tidy(to), old); const el = exEl.querySelector('.set[data-s="' + j + '"] .w'); if (el) el.value = x.w;
   } else {
-    const r = num(x.r), rr = repRange(e), to = r == null ? (str(x.r) === "" && d > 0 ? (rr ? rr[1] : 1) : null) : Math.max(0, Math.round(r) + d);
+    const r = num(x.r), rr = repRange(e), to = r == null ? (str(x.r) === "" && d > 0 ? (rr ? rr[0] : 1) : null) : Math.max(0, Math.round(r) + d);
     if (to == null) return;
     x.r = String(to); const el = exEl.querySelector('.set[data-s="' + j + '"] .r'); if (el) el.value = x.r;
   }
@@ -537,8 +538,8 @@ function newSession(r) {
   return {
     routineId: r.id, name: r.name, startedAt: new Date().toISOString(), note: "",
     exercises: r.exercises.map(e => {
-      const prev = lastTime(r.id, e.name), t = targetLoad(e);
-      const w0 = e.defaultWeight != null ? String(e.defaultWeight) : t != null && e.log !== "bodyweight" ? tidy(t) : "", r0 = e.defaultReps == null ? "" : String(e.defaultReps);
+      const prev = lastTime(r.id, e.name), t = targetLoad(e), rr = repRange(e);
+      const w0 = e.defaultWeight != null ? String(e.defaultWeight) : t != null && e.log !== "bodyweight" ? tidy(t) : "", r0 = e.defaultReps != null ? String(e.defaultReps) : rr ? String(rr[0]) : "";
       return {
         name: e.name, repTarget: e.repTarget || "", rest: e.rest || 0, target: e.target || "", note: e.note || "",
         log: e.log || "", cue: e.cue || "", form: e.form || null, optional: !!e.optional, step: e.step || 0,

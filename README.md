@@ -47,7 +47,8 @@ down so it is easy to find and change (the code is under "what the page fills in
   card no longer changes what the boxes show once the lift has history; the `target` text still shows.
 - **Loads never come from another card.** Work Pull does not start from Home Pull's numbers.
 - **A lift with no history and no `defaultWeight`** opens at the number its `target` text starts with
-  (`"12.5–15"` → 12.5). A target that starts with a word fills nothing.
+  (`"12.5–15"` → 12.5). A target that starts with a word fills nothing. With no `defaultReps`, reps open at the
+  bottom of the rep range (`"10-12"` → 10).
 - **The set being worked on** is the first unchecked one, or the one whose box was tapped. It gets four buttons under
   it: weight down/up by one plate, reps down/up by one.
 - **A plate** is 5; dumbbells up to 25 and cables under 20 (or sitting on a half step) move by 2.5. An exercise can
