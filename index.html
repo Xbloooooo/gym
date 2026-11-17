@@ -223,7 +223,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-14";
+const VERSION = "2026.11.17-15";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -487,9 +487,9 @@ function stepFor(e, v, dir) {
   if (e.log === "cable") return v % 5 || low(20) ? 2.5 : 5;
   return 5;
 }
-function lastLine(prev) {
-  const ws = prev.sets.map(x => str(x.w)), rs = prev.sets.map(x => str(x.r) || "—");
-  return ws.every(w => w === ws[0]) ? (ws[0] || "bw") + " × " + rs.join(", ") : ws.map((w, i) => (w || "bw") + "×" + rs[i]).join(", ");
+function lastLine(e, prev) {
+  const none = e.log === "bodyweight" ? "bw" : "—", ws = prev.sets.map(x => str(x.w) || none), rs = prev.sets.map(x => str(x.r) || "—");
+  return ws.every(w => w === ws[0]) ? ws[0] + " × " + rs.join(", ") : ws.map((w, i) => w + "×" + rs[i]).join(", ");
 }
 function bumpFor(e, prev) {
   const rr = repRange(e); if (!prev || !rr || e.skipped || e.sets.some(x => x.done) || prev.sets.length < e.sets.length) return null;
@@ -588,9 +588,13 @@ async function finish() {
   d.finishedAt = new Date().toISOString();
   S.workouts.push(d); S.draft = null; save(); stopRest();
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
-  const ok = await copyText(summary(d));
-  if (ok) { go("#/"); toast("Saved · summary copied"); }
-  else { go("#/history/" + (S.workouts.length - 1)); toast("Saved. Copy failed — the text is selected, copy it by hand.", 5000); setTimeout(() => { const el = $(".sum"); if (el) selectNode(el); }, 80); }
+  // What goes to the clipboard is the save code of the whole history, this workout included: it replaces any code
+  // kept before. It is built on the spot, with nothing awaited first, because an iPhone only lets a page copy
+  // straight from the tap. No plain-text summary is produced; tools/decode.js reads a code.
+  let sv = null; try { sv = buildCode(S.workouts); } catch (e) {}
+  const ok = sv ? await copyText(sv.text) : false;
+  if (ok) { markBackup(); go("#/"); toast("Saved · save code copied (" + plural(S.workouts.length, "workout") + ")"); }
+  else { go("#/backup"); toast(sv ? "Saved. Copy failed — the code is selected, copy it by hand." : "Saved, but the save code could not be built.", 6000); setTimeout(() => { const el = $("#save-text"); if (el && sv) selectNode(el); }, 300); }
 }
 
 /* =====================================================================
@@ -723,7 +727,7 @@ function viewSession() {
       if (links.length) h += '<p class="ex-form">' + links.map(k => '<a href="' + esc(e.form[k[0]]) + '" target="_blank" rel="noopener">' + k[1] + "</a>").join("") + "</p>";
     }
     const prev = lastTime(d.routineId, e.name), bump = bumpFor(e, prev), cur = curSet(e);
-    if (prev) h += '<p class="ex-last">Last time · ' + esc(day(prev.at)) + " · <b>" + esc(lastLine(prev)) + "</b></p>";
+    if (prev) h += '<p class="ex-last">Last time · ' + esc(day(prev.at)) + " · <b>" + esc(lastLine(e, prev)) + "</b></p>";
     if (bump) h += '<button class="bump" data-act="bump" data-to="' + esc(bump.to) + '" data-reps="' + esc(bump.reps) + '">Every set reached ' + bump.top + " last time. <b>" +
       (e.log === "assist" ? "Drop the assist to " : "Move up to ") + esc(bump.to) + "</b></button>";
     h += '<div class="sets"><div class="set-h"><span>Set</span><span>' + (e.log === "assist" ? "Pin" : "lb") + "</span><span>Reps</span><span>Done</span></div>";
@@ -761,7 +765,7 @@ function viewWorkout(i) {
   const m = minutes(w);
   app.innerHTML = '<div class="view"><div class="bar"><button class="back" data-act="history">' + ICON.back + 'History</button><h1>' + esc(w.name || "Workout") + '</h1><span class="side"></span></div>' +
     '<p class="fine" style="margin-top:16px">' + esc(day(w.startedAt)) + (m ? " · " + m + " min" : "") + " · " + doneSets(w) + " sets</p>" +
-    '<pre class="sum">' + esc(summary(w)) + '</pre><div class="stack"><button class="btn ink" data-act="copy-sum" data-i="' + i + '">Copy summary</button>' +
+    '<pre class="sum">' + esc(summary(w)) + '</pre><div class="stack">' +
     '<button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
 }
 
@@ -816,7 +820,6 @@ document.addEventListener("click", ev => {
   if (act === "timer-toggle") { T.open = !T.open; return renderDock(); }
   if (act === "timer-stop") { ev.stopPropagation(); return stopRest(); }
   if (act === "timer-add") { if (T.state === "run") { T.endAt += 30000; T.total += 30; tickRest(); } return; }
-  if (act === "copy-sum") { const w = S.workouts[+b.dataset.i]; if (w) copyText(summary(w)).then(ok => { if (ok) toast("Summary copied"); else { selectNode($(".sum")); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
   if (act === "delete") { const i = +b.dataset.i, w = S.workouts[i]; if (w && confirm("Delete " + (w.name || "this workout") + " from " + day(w.startedAt) + "? This cannot be undone.")) { S.workouts.splice(i, 1); save(); go("#/history"); toast("Deleted"); } return; }
   if (act === "copy-save") { if (SAVE) copyText(SAVE.text).then(ok => { if (ok) { markBackup(); toast("Save code copied · " + SAVE.chars.toLocaleString() + " letters"); } else { selectNode($("#save-text")); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
   if (act === "save-image") return makeSaveImages();
@@ -1045,7 +1048,7 @@ function logCodec(io, list) {
 }
 // The code for a list of workouts. Header, 7 bytes: format, CRC-32 of the body, body length.
 const HEAD = 7, FORMAT = 4;
-async function encodeSave(workouts) {
+function buildCode(workouts) {
   const plain = canon(workouts), io = coder(null); logCodec(io, plain);
   const body = io.end(), c = crc32(body), n = body.length;
   if (n > 65535) throw new Error("the history is too long for one code");
@@ -1055,6 +1058,7 @@ async function encodeSave(workouts) {
   for (let i = 0; i < letters.length; i += LINE) { const p = letters.slice(i, i + LINE); lines.push(p + lineCheck(c, lines.length, p)); }
   return { lines, chars: letters.length + lines.length * CHK, text: lines.map(showLine).join("\n") };
 }
+async function encodeSave(workouts) { return buildCode(workouts); }
 // Is this raw line the first line of a code? It carries the header.
 function readHead(raw) {
   if (raw.length < HEAD * 2 + CHK) return null;
@@ -1074,18 +1078,30 @@ function fixes(raw, len, ok) {             // every one-letter change (wrong, mi
   else if (n === len + 1) for (let i = 0; i < n; i++) t(raw.slice(0, i) + raw.slice(i + 1));
   return out;
 }
-// Text (pasted or OCR'd) -> raw lines of letters. Lines with digits in them are prose (a workout summary, say) and are dropped.
-function rawLines(text) {
-  let lines = String(text).toUpperCase().split(/\r?\n/).map(l => l.replace(/[^A-Z0-9]/g, "")).filter(l => l.length >= 6 && !/[0-9]/.test(l));
-  if (!lines.some(l => l.length === FULL)) {      // pasted as one run: cut it back into lines, code after code
-    const all = lines.join(""); lines = [];
-    for (let p = 0; p < all.length;) {
-      const h = readHead(all.slice(p, p + FULL));
-      if (!h) { lines.push(all.slice(p, p + FULL)); p += FULL; continue; }
-      for (let i = 0; i < h.total; i++) { lines.push(all.slice(p, p + want(h, i))); p += want(h, i); }
-    }
+// A first line of a code at the very start of s: how many letters it takes, or 0.
+function headAt(s) { for (let n = Math.min(FULL, s.length); n >= HEAD * 2 + CHK; n--) if (readHead(s.slice(0, n))) return n; return 0; }
+// One run of letters -> code lines. A run is normally exactly one line and comes back as it is. But codes get pasted
+// end to end, with no break between the last line of one and the first line of the next, or with every break gone:
+// so look for a first line at every position, and from there cut the lines that follow it by the lengths it announces.
+function splitRun(s) {
+  const out = []; let from = 0, p = 0;
+  while (p <= s.length - (HEAD * 2 + CHK)) {
+    const n = headAt(s.slice(p, p + FULL));
+    if (!n) { p++; continue; }
+    if (p > from) out.push(s.slice(from, p));
+    const h = readHead(s.slice(p, p + n)); out.push(s.slice(p, p + n)); p += n;
+    for (let i = 1; i < h.total && p < s.length; i++) { out.push(s.slice(p, p + want(h, i))); p += want(h, i); }
+    from = p;
   }
-  return lines;
+  if (from < s.length) out.push(s.slice(from));
+  return out;
+}
+// Text (pasted or OCR'd) -> raw lines of letters. Lines with digits in them are prose (a note, a date) and are dropped.
+function rawLines(text) {
+  const lines = String(text).toUpperCase().split(/\r?\n/).map(l => l.replace(/[^A-Z0-9]/g, "")).filter(l => l.length >= 6 && !/[0-9]/.test(l));
+  // Text that was re-wrapped has no line of the right width any more: treat all of it as one run.
+  const runs = lines.some(l => l.length === FULL) ? lines : [lines.join("")];
+  return runs.flatMap(splitRun).filter(l => l.length >= 6);
 }
 // Blocks of raw lines (one block per paste or image) -> every code found in them, each with its lines and what is missing.
 function assemble(blocks) {

@@ -74,13 +74,20 @@ down so it is easy to find and change (the code is under "what the page fills in
 
 ## Backup
 
+The page hands out one thing: the save code. There is no plain-text summary to copy any more; a workout can still be
+read on its History page, and a code is turned back into readable workouts with `tools/decode.js` (below).
+
+- **Finish copies the code.** Finishing a session puts the current code, the whole history with the new workout in
+  it, on the clipboard. Each one replaces the one before, so only the newest needs keeping. If the copy is refused
+  the page opens Backup with the code selected.
+
 History → Backup & restore.
 
 - **Current code** — every finished workout on the phone as letters, one code that can cover any number of days. It
   is rebuilt whenever the history changes, so the latest copy replaces any older code. The page shows every line of
   it whole, so a plain screenshot of the page can be read back; a code longer than the screen takes several
   screenshots, picked together.
-- **Codes add up.** Add a code, then another, or paste several together, in any order, with other text around them, and
+- **Codes add up.** Add a code, then another, or paste several together, in any order, end to end or with other text around them, and
   the workouts in them are added to what is on the phone. A workout already there is skipped (same card, same start
   minute), so overlapping codes and pasting twice are harmless. Nothing on the phone is removed, and the phone's own
   copy of a workout is never swapped for the thinner one in a code.
@@ -141,13 +148,25 @@ prose and ignored.
 
 A phone screen shows about 40 lines of the code on the Backup page. A save image holds 180 lines.
 
+### Reading a code off the phone
+
+    node tools/decode.js < code.txt            every workout in the pasted text, readable
+    node tools/decode.js --last 1 < code.txt   only the newest
+    node tools/decode.js --json < code.txt     the page's own workout objects
+
+It takes what the page takes: one code or many, in any order, end to end or with other text around them, and merges
+them the same way. It runs the code functions straight out of `index.html` (`tools/page.js`), so it reads exactly
+the format the live page writes, and stops reading older codes when the page does.
+
 ## Files
 
     index.html             the app: styles, program, code
     manifest.webmanifest   name and icons for Add to Home Screen
     fonts/                 Barlow, Barlow Condensed (OFL 1.1), Cousine (Apache 2.0)
     ocr/                   tesseract.js 7.0.0, tesseract.js-core 7.0.0, English data (Apache 2.0); loaded only when an image is read
-    tools/check.js         syntax check, and checks the cards against the numbered lists
+    tools/check.js         syntax check, cards against the numbered lists, and a save-code round trip in node
+    tools/decode.js        save code(s) → readable workouts
+    tools/page.js          loads the cards and the save-code functions out of index.html for the two tools above
     tools/make_icons.py    redraws the icons
 
 No build step. Not offline: the page has to load from the network.
