@@ -40,7 +40,9 @@ Six cards so far: Pull and Push in each lane, all starting from the Hevy "Comeba
 History → Backup & restore.
 
 - **Current code** — every finished workout on the phone as letters, one code that can cover any number of days. It
-  is rebuilt whenever the history changes, so the latest copy replaces any older code.
+  is rebuilt whenever the history changes, so the latest copy replaces any older code. The page shows every line of
+  it whole, so a plain screenshot of the page can be read back; a code longer than the screen takes several
+  screenshots, picked together.
 - **Codes add up.** Add a code, then another, or paste several together, in any order, with other text around them, and
   the workouts in them are added to what is on the phone. A workout already there is skipped (same card, same start
   minute), so overlapping codes and pasting twice are harmless. Nothing on the phone is removed, and the phone's own
@@ -100,7 +102,7 @@ from many codes can arrive mixed, out of order or twice and still be sorted; a m
 wrong, dropped or doubled letter is repaired. The CRC-32 covers each code. Lines with digits in them are treated as
 prose and ignored.
 
-A phone screenshot shows about 50 lines. A save image holds 180 lines.
+A phone screen shows about 40 lines of the code on the Backup page. A save image holds 180 lines.
 
 ## Files
 

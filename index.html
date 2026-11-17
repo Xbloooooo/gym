@@ -177,6 +177,8 @@ h1,h2,h3,p{margin:0}
 .sec .fine{margin-bottom:12px}
 .code{width:100%;height:132px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font:400 12px/1.6 var(--mono);letter-spacing:.02em;resize:vertical;white-space:pre;overflow:auto}
 #load-text{font-size:16px;line-height:1.45}
+/* the code on show: every line whole and none hidden, so a screenshot of the page can be read back */
+.rcode{margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font:400 calc((min(100vw,540px) - 64px) / 31.9)/1.75 var(--mono);white-space:pre;overflow:hidden;-webkit-user-select:text;user-select:text}
 .code::placeholder{font-family:var(--body);font-size:15px;letter-spacing:0;color:var(--faint);white-space:normal}
 .shots{display:grid;gap:12px;margin-top:12px}
 .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
@@ -205,7 +207,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-8";
+const VERSION = "2026.11.17-9";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -665,7 +667,7 @@ function viewBackup() {
     '<p class="fine" style="margin-top:16px">Logs live only in this browser on this phone. <b id="persist"></b> A save code is the history as text you can keep anywhere.</p>' +
 
     '<section class="sec"><h2>Current code</h2>' + (NOTE ? '<div class="status" style="margin:0 0 12px">' + esc(NOTE) + "</div>" : "") +
-    '<p class="fine">Every finished workout on this phone — ' + n + " of them" + '. It is rebuilt whenever the history changes, so the latest copy replaces any older code. It records what you lifted: card, date, and the weight and reps of each checked set. Card notes and targets are not in it' + (S.draft ? ", and neither is the unfinished session" : "") + '.</p><textarea class="code" id="save-text" readonly aria-label="Save code">building…</textarea>' +
+    '<p class="fine">Every finished workout on this phone — ' + n + " of them" + '. It is rebuilt whenever the history changes, so the latest copy replaces any older code. It records what you lifted: card, date, and the weight and reps of each checked set. Card notes and targets are not in it' + (S.draft ? ", and neither is the unfinished session" : "") + '.</p><pre class="rcode" id="save-text" aria-label="Save code">building…</pre>' +
     '<p class="fine" id="save-stats" style="margin-top:8px"></p><div class="stack"><button class="btn ink" data-act="copy-save" disabled>Copy save code</button>' +
     '<button class="btn quiet" data-act="save-image" disabled>Make save image</button></div><div class="shots" id="shots"></div></section>' +
 
@@ -680,11 +682,11 @@ function viewBackup() {
   SAVE = null; NOTE = "";
   encodeSave(S.workouts).then(sv => {
     SAVE = sv; const ta = $("#save-text"); if (!ta) return;
-    ta.value = sv.lines.map(showLine).join("\n");
+    ta.textContent = sv.lines.map(showLine).join("\n");
     const pages = Math.ceil(sv.lines.length / PAGE);
     $("#save-stats").textContent = sv.chars.toLocaleString() + " letters · " + sv.lines.length + " lines · " + pages + " image" + (pages > 1 ? "s" : "");
     app.querySelectorAll('[data-act="copy-save"],[data-act="save-image"]').forEach(b => b.disabled = false);
-  }).catch(e => { const ta = $("#save-text"); if (ta) ta.value = "Could not build the save code: " + e.message; });
+  }).catch(e => { const ta = $("#save-text"); if (ta) { ta.style.whiteSpace = "normal"; ta.textContent = "Could not build the save code: " + e.message; } });
 }
 function markBackup() { S.backup = { at: new Date().toISOString(), n: S.workouts.length }; save(); }
 
@@ -707,7 +709,7 @@ document.addEventListener("click", ev => {
   if (act === "timer-add") { if (T.state === "run") { T.endAt += 30000; T.total += 30; tickRest(); } return; }
   if (act === "copy-sum") { const w = S.workouts[+b.dataset.i]; if (w) copyText(summary(w)).then(ok => { if (ok) toast("Summary copied"); else { selectNode($(".sum")); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
   if (act === "delete") { const i = +b.dataset.i, w = S.workouts[i]; if (w && confirm("Delete " + (w.name || "this workout") + " from " + day(w.startedAt) + "? This cannot be undone.")) { S.workouts.splice(i, 1); save(); go("#/history"); toast("Deleted"); } return; }
-  if (act === "copy-save") { if (SAVE) copyText(SAVE.text).then(ok => { if (ok) { markBackup(); toast("Save code copied · " + SAVE.chars.toLocaleString() + " letters"); } else { const ta = $("#save-text"); ta.focus(); ta.select(); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
+  if (act === "copy-save") { if (SAVE) copyText(SAVE.text).then(ok => { if (ok) { markBackup(); toast("Save code copied · " + SAVE.chars.toLocaleString() + " letters"); } else { selectNode($("#save-text")); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
   if (act === "save-image") return makeSaveImages();
   if (act === "share-img") return shareImage(+b.dataset.i);
   if (act === "restore-text") return restoreFromText();
@@ -1022,11 +1024,12 @@ function applyReplace(st, source) {        // JSON import only: the file becomes
 }
 function say(html, bad) { const el = $("#load-status"); if (el) { el.innerHTML = html; el.classList.toggle("bad", !!bad); } }
 // Read every code in the blocks, merge the readable ones into the log, say plainly what could not be read.
-async function addFromCodes(blocks) {
+async function addFromCodes(blocks, fromImage) {
   const codes = assemble(blocks);
   if (!codes.length) {
-    const old = blocks.some(b => b.some(l => l.length >= 30 && [...l].every(ch => A16.includes(ch))));
-    say(old ? "Those letters are not a code this version can read. If it was copied from an earlier version of this page, it is in an old format: codes are not carried across versions yet." :
+    const old = !fromImage && blocks.some(b => b.some(l => l.length >= 30 && [...l].every(ch => A16.includes(ch))));
+    say(fromImage ? "No save code could be read in " + (blocks.length > 1 ? "those images" : "that image") + ". The first line of the code has to be in the picture, whole and sharp. A screenshot of this page or of the save image reads best." :
+      old ? "Those letters are not a code this version can read. If it was copied from an earlier version of this page, it is in an old format: codes are not carried across versions yet." :
       "No save code found in that. A code is recognised by its first line, so the top of it has to be included.", true); return false;
   }
   const good = [], broken = [];
@@ -1150,7 +1153,7 @@ async function restoreFromImages(files) {
       const { data } = await w.recognize(await imageCanvas(f));
       RESTORE.push(rawLines(data.text));
     }
-    await addFromCodes(RESTORE);
+    await addFromCodes(RESTORE, true);
   } catch (e) { say("Could not read the image: " + esc(e.message || e), true); }
 }
 
