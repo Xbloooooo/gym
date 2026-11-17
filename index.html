@@ -205,7 +205,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-2";
+const VERSION = "2026.11.17-3";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -246,12 +246,18 @@ const ROUTINES = [
     { name: "Concentration curl", sets: 2, repTarget: "6", log: "db", defaultReps: "6", optional: true,
       cue: "Slow negative.", note: "Assisted lift." }
   ]},
-  { id: "push", name: "Push", blurb: "Starter card — loads not set", exercises: [
-    { name: "Push-up (warm-up)", sets: 2, repTarget: "10", rest: 60, log: "bodyweight" },
-    { name: "Dumbbell bench press", sets: 3, repTarget: "8-12", rest: 120, log: "db" },
-    { name: "Dumbbell shoulder press", sets: 3, repTarget: "8-12", rest: 120, log: "db" },
-    { name: "Lateral raise", sets: 3, repTarget: "12-15", rest: 75, log: "db" },
-    { name: "Overhead triceps extension", sets: 3, repTarget: "10-12", rest: 75, log: "db" }
+  // Real card: Hevy routine "Comeback Push" (hevy.com/routine/UqQ13NmZ6RU), copied 17 Nov. No loads and no warm-up row in the source.
+  { id: "push", name: "Comeback Push", blurb: "Loads not set yet — first session sets the openers", exercises: [
+    { name: "Dumbbell bench press", sets: 3, repTarget: "10-12", rest: 90, log: "db" },
+    { name: "Seated cable chest fly", sets: 3, repTarget: "10", rest: 90, log: "cable", defaultReps: "10" },
+    { name: "Incline dumbbell chest fly", sets: 3, repTarget: "10", rest: 90, log: "db", defaultReps: "10" },
+    { name: "Triceps pushdown", sets: 3, repTarget: "12", rest: 60, log: "cable", defaultReps: "12" },
+    { name: "Dumbbell lateral raise", sets: 3, repTarget: "10", rest: 60, log: "db", defaultReps: "10" },
+    { name: "Face pull", sets: 2, repTarget: "20", rest: 45, log: "cable", defaultReps: "20" },
+    { name: "Dumbbell triceps kickback", sets: 2, repTarget: "12", rest: 45, log: "db", defaultReps: "12" },
+    { name: "Single-arm cable crossover", sets: 2, repTarget: "15", rest: 45, log: "cable", defaultReps: "15", cue: "Burn · continuous." },
+    { name: "Barbell bench press", sets: 2, repTarget: "12", log: "bar", defaultReps: "12", cue: "Stretch · slow eccentric." },
+    { name: "Push-up", sets: 2, rest: 60, log: "bodyweight", note: "Mechanical drop OK." }
   ]},
   { id: "legs", name: "Legs", blurb: "Starter card — loads not set", exercises: [
     { name: "Bodyweight squat (warm-up)", sets: 2, repTarget: "12", rest: 60, log: "bodyweight" },
