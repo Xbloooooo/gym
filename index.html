@@ -223,7 +223,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-13";
+const VERSION = "2026.11.17-14";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -237,7 +237,7 @@ const TARGETS = {
 const LANES = [
   { key: "home",    label: "Home",     venue: "Home",        prefix: "" },
   { key: "work",    label: "Work",     venue: "Office gym",  prefix: "work_" },
-  { key: "daypass", label: "Day-pass", venue: "Unity",       prefix: "unity_" }
+  { key: "daypass", label: "Day-pass", venue: "EoS",         prefix: "eos_" }
 ];
 
 /* Cards. Pull and Push in each lane for now; a lane shows up on the home screen once it has a card.
@@ -313,8 +313,8 @@ const ROUTINES = [
     { name: "Push-up", sets: 2, rest: 60, log: "bodyweight", note: "Mechanical drop OK." }
   ]},
 
-  // ---- Day-pass (Unity) ----
-  { id: "unity_pull", name: "Unity Pull", blurb: "Row 85 · assist 100 · face pull 25", exercises: [
+  // ---- Day-pass (EoS) ----
+  { id: "eos_pull", name: "EoS Pull", blurb: "Row 85 · assist 100 · face pull 25", exercises: [
     { name: "Seated cable row — V grip", sets: 3, repTarget: "10", rest: 120, target: "85", log: "cable", defaultWeight: 85, defaultReps: "10",
       note: "All sets top of range clean → bump next time." },
     { name: "Assisted pull-up", sets: 3, repTarget: "5", rest: 150, target: "assist 100", log: "assist", defaultWeight: 100, defaultReps: "5",
@@ -332,7 +332,7 @@ const ROUTINES = [
     { name: "Concentration curl", sets: 2, repTarget: "6", log: "db", defaultReps: "6", optional: true,
       cue: "Slow negative.", note: "Assisted lift." }
   ]},
-  { id: "unity_push", name: "Unity Push", blurb: "Loads not set yet — first session sets the openers", exercises: [
+  { id: "eos_push", name: "EoS Push", blurb: "Loads not set yet — first session sets the openers", exercises: [
     { name: "Dumbbell bench press", sets: 3, repTarget: "10-12", rest: 90, log: "db" },
     { name: "Seated cable chest fly", sets: 3, repTarget: "10", rest: 90, log: "cable", defaultReps: "10" },
     { name: "Incline dumbbell chest fly", sets: 3, repTarget: "10", rest: 90, log: "db", defaultReps: "10" },
@@ -361,7 +361,7 @@ const LOG = {
    APPEND ONLY. Never reorder, delete or reuse a line — every code already written down would then name the wrong
    lift. A new or renamed lift gets a new line at the end (`node tools/check.js` says when one is missing).
    A lift that is not listed still works; its name is spelled out in the code, which only costs letters. */
-const CARD_IDS = ["pull", "push", "legs", "easy", "work_pull", "work_push", "work_legs", "work_easy", "unity_pull", "unity_push"];
+const CARD_IDS = ["pull", "push", "legs", "easy", "work_pull", "work_push", "work_legs", "work_easy", "eos_pull", "eos_push"];
 const LIFTS = [
   ["Seated cable row — V grip", "cable"],        // 1
   ["Assisted pull-up", "assist"],
@@ -393,9 +393,11 @@ const pad2 = n => String(n).padStart(2, "0");
 
 function normState(o) {
   o = o && typeof o === "object" ? o : {};
+  // The day-pass gym is EoS. Its cards were first named "Unity" (ids unity_*); bring anything logged under that along.
+  const eos = w => { if (w && typeof w.routineId === "string" && w.routineId.startsWith("unity_")) { w.routineId = "eos_" + w.routineId.slice(6); if (typeof w.name === "string") w.name = w.name.replace(/^Unity /, "EoS "); } return w; };
   return {
-    workouts: Array.isArray(o.workouts) ? o.workouts.filter(w => w && typeof w === "object") : [],
-    draft: o.draft && typeof o.draft === "object" && Array.isArray(o.draft.exercises) ? o.draft : null,
+    workouts: Array.isArray(o.workouts) ? o.workouts.filter(w => w && typeof w === "object").map(eos) : [],
+    draft: o.draft && typeof o.draft === "object" && Array.isArray(o.draft.exercises) ? eos(o.draft) : null,
     theme: o.theme === "stealth" ? "stealth" : "default",
     backup: o.backup && typeof o.backup === "object" ? o.backup : null
   };

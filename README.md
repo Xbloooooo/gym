@@ -21,7 +21,7 @@ Everything a session reads is at the top of the script in `index.html`:
 
 - `VERSION` — bump on every edit. It shows next to the wordmark, so a stale phone is obvious.
 - `TARGETS` — the "Due next" card on the home screen. Written by hand when a session is graded.
-- `LANES` — Home / Work / Day-pass. A routine belongs to a lane by its id prefix (`work_`, `unity_`, none = home).
+- `LANES` — Home / Work / Day-pass. A routine belongs to a lane by its id prefix (`work_`, `eos_`, none = home).
 - `ROUTINES` — the cards. Same object shape as the design doc, so an existing `ROUTINES` array pastes straight in.
 - `CARD_IDS`, `LIFTS` — numbered lists the save code uses in place of names. **Append only**: a new or renamed lift
   gets a new line at the end, and no line is ever reordered, removed or reused, or codes already written down
