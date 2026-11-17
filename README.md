@@ -4,6 +4,17 @@ Phone-first workout logger. One page, no account, no server of ours: GitHub Page
 
 Live: https://xbloooooo.github.io/gym/
 
+## The phone it is built for
+
+Howl's iPhone Air, in Safari: 420 × 912 CSS px at 3×, safe area 62 px top and 34 px bottom. Check every layout change
+at that size first (in Chrome: 420×912, DPR 3, safe-area insets 62/34). What the phone imposes:
+
+- every tap target is at least 44 px, and every text box is 16 px or more, or Safari zooms the page on focus;
+- the bar, the dock and the toast read `env(safe-area-inset-*)`; heights use `dvh`, since Safari's bars cover part of `vh`;
+- there is no vibration on iPhone and the beep is silent when the ringer switch is off, so the end of a rest has to be
+  readable on the screen alone;
+- copying only works straight from a tap, so nothing slow may run between the tap and the copy.
+
 ## Changing the program
 
 Everything a session reads is at the top of the script in `index.html`:
