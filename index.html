@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="en" data-theme="default">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F1EDE4">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gym">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Gym</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+@font-face{font-family:"Barlow";font-weight:400;font-display:swap;src:url(fonts/barlow-400.woff2) format("woff2")}
+@font-face{font-family:"Barlow";font-weight:500;font-display:swap;src:url(fonts/barlow-500.woff2) format("woff2")}
+@font-face{font-family:"Barlow";font-weight:600;font-display:swap;src:url(fonts/barlow-600.woff2) format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-weight:600;font-display:swap;src:url(fonts/barlow-condensed-600.woff2) format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-weight:700;font-display:swap;src:url(fonts/barlow-condensed-700.woff2) format("woff2")}
+@font-face{font-family:"Cousine";font-weight:400;font-display:swap;src:url(fonts/cousine-400.woff2) format("woff2")}
+
+:root{
+  --bg:#F1EDE4; --surface:#FAF8F3; --raised:#FFFFFF; --ink:#191713; --muted:#6B6558; --faint:#A19A8B;
+  --line:#D9D2C4; --accent:#D5401C; --on-accent:#FFFFFF; --done-bg:#F6E3DA;
+  --shadow:0 1px 0 rgba(25,23,19,.05),0 10px 28px -16px rgba(25,23,19,.28);
+  --cond:"Barlow Condensed","Arial Narrow",system-ui,sans-serif; --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Cousine",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+[data-theme="stealth"]{
+  --bg:#09090A; --surface:#111113; --raised:#18181B; --ink:#C9C7C2; --muted:#85837D; --faint:#55534F;
+  --line:#242428; --accent:#C9C7C2; --on-accent:#09090A; --done-bg:#1C1C1F; --shadow:none;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.4 var(--body);-webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  min-height:100dvh;padding-bottom:calc(var(--dock,0px) + env(safe-area-inset-bottom))}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-user-select:none;user-select:none}
+a{color:inherit}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#app{max-width:540px;margin:0 auto;padding:0 18px 28px}
+.view{animation:in .16s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---------- shared ---------- */
+.caps{font:600 12.5px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:56px;padding:0 20px;border:1.5px solid var(--ink);border-radius:14px;background:transparent;
+  font:700 20px/1 var(--cond);letter-spacing:.08em;text-transform:uppercase;transition:transform .08s,opacity .15s}
+.btn:active{transform:scale(.985)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.ink{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.quiet{border-color:var(--line);font-size:17px;min-height:50px}
+.btn.danger{border-color:var(--line);color:var(--accent)}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+.bar{position:sticky;top:0;z-index:5;display:grid;grid-template-columns:76px 1fr 76px;align-items:center;margin:0 -18px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar h1{font:700 22px/1.1 var(--cond);letter-spacing:.06em;text-transform:uppercase;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .back{justify-self:start;display:flex;align-items:center;gap:2px;min-height:44px;padding:0 8px 0 2px;border:0;background:none;font:600 16px var(--body);color:var(--muted)}
+.bar .side{justify-self:end;padding-right:6px;font:600 20px/1 var(--cond);letter-spacing:.04em;font-variant-numeric:tabular-nums;color:var(--muted)}
+.empty{padding:44px 8px;text-align:center;color:var(--muted)}
+.fine{font-size:14px;color:var(--muted);line-height:1.45}
+.fine b{color:var(--ink);font-weight:600}
+
+/* ---------- home ---------- */
+.top{display:flex;align-items:flex-end;justify-content:space-between;padding:calc(20px + env(safe-area-inset-top)) 2px 16px}
+.mark{display:flex;align-items:baseline;gap:10px}
+.mark b{font:700 46px/.82 var(--cond);letter-spacing:.01em}
+.mark b i{font-style:normal;color:var(--accent)}
+.mark span{font:400 11.5px/1 var(--mono);color:var(--faint)}
+.theme{min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:transparent;font:600 12.5px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.due{position:relative;overflow:hidden}
+.due .caps{display:flex;justify-content:space-between}
+.due h2{margin:10px 0 2px;font:700 46px/.95 var(--cond);letter-spacing:.005em;text-transform:uppercase}
+.due .venue{font-weight:500;color:var(--muted)}
+.due ul{list-style:none;margin:14px 0 16px;padding:0;border-top:1px solid var(--line)}
+.due li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15.5px}
+.due li b{font:600 18px/1.2 var(--cond);letter-spacing:.03em;white-space:nowrap}
+.due .unset{margin:10px 0 0;color:var(--muted);font-size:15px}
+.resume{margin-bottom:14px;border-color:var(--ink)}
+.resume h2{margin:8px 0 2px;font:700 30px/1 var(--cond);text-transform:uppercase}
+.resume p{color:var(--muted);font-size:15px;margin-bottom:14px}
+.resume .row2{grid-template-columns:2fr 1fr}
+.lane{margin-top:30px}
+.lane-h{display:flex;align-items:baseline;justify-content:space-between;padding:0 2px 8px;border-bottom:2px solid var(--ink)}
+.lane-h h3{font:700 15px/1 var(--cond);letter-spacing:.2em;text-transform:uppercase}
+.lane-h span{font-size:13.5px;color:var(--muted)}
+.rt{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;width:100%;min-height:68px;padding:11px 2px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left}
+.rt:active{background:var(--surface)}
+.rt b{display:block;font:600 25px/1.05 var(--cond);letter-spacing:.02em;text-transform:uppercase}
+.rt small{display:block;margin-top:3px;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rt .go{display:flex;align-items:center;gap:8px;color:var(--faint)}
+.pill{padding:5px 8px 4px;border-radius:6px;background:var(--accent);color:var(--on-accent);font:700 12px/1 var(--cond);letter-spacing:.14em}
+.foot{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:30px}
+.foot a{display:block;padding:14px 16px;border:1px solid var(--line);border-radius:14px;text-decoration:none;background:var(--surface)}
+.foot a b{display:block;font:700 19px/1 var(--cond);letter-spacing:.08em;text-transform:uppercase}
+.foot a small{display:block;margin-top:5px;font-size:13.5px;color:var(--muted)}
+.foot a.warn small{color:var(--accent)}
+
+/* ---------- session ---------- */
+.prog{position:sticky;top:calc(65px + env(safe-area-inset-top));z-index:4;height:3px;margin:0 -18px;background:var(--line)}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.snote{display:block;width:100%;margin:16px 0 4px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);resize:none;min-height:50px}
+.snote::placeholder{color:var(--faint)}
+.ex{margin-top:14px;padding:18px 16px 14px;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow)}
+.ex-h{display:grid;grid-template-columns:auto 1fr auto;align-items:start;gap:10px}
+.ex-n{font:700 15px/1.75 var(--cond);letter-spacing:.08em;color:var(--faint);font-variant-numeric:tabular-nums}
+.ex h2{font:700 27px/1.02 var(--cond);letter-spacing:.015em;text-transform:uppercase}
+.skip{min-height:36px;margin:-4px -4px 0 0;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:none;font:600 12px/1 var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.ex-meta{margin-top:8px;font-size:15.5px;color:var(--muted)}
+.ex-meta b{font-weight:600;color:var(--ink)}
+.ex-log{display:flex;gap:8px;align-items:baseline;margin-top:8px;font-size:14.5px;color:var(--muted)}
+.tag{flex:none;padding:3px 6px 2px;border:1px solid var(--line);border-radius:5px;font:700 11.5px/1 var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.tag.opt{color:var(--muted)}
+.ex-cue{margin-top:8px;font-size:15px;font-style:italic}
+.ex-note{margin-top:6px;font-size:14.5px;color:var(--muted)}
+.ex-form{display:flex;gap:16px;margin-top:8px;font-size:14px}
+.ex-form a{color:var(--muted);text-underline-offset:3px}
+.sets{margin-top:14px}
+.set-h,.set{display:grid;grid-template-columns:30px 1fr 1fr 60px;gap:8px;align-items:center}
+.set-h{padding:0 0 6px}
+.set-h span{font:600 11.5px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--faint);text-align:center}
+.set-h span:first-child{text-align:left}
+.set{margin-top:8px}
+.set:first-of-type{margin-top:0}
+.set-n{font:700 20px/1 var(--cond);color:var(--faint);font-variant-numeric:tabular-nums}
+.set input{width:100%;min-width:0;height:54px;padding:0 6px;border:1.5px solid var(--line);border-radius:12px;background:var(--raised);text-align:center;font:600 26px/1 var(--cond);letter-spacing:.02em;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.set input::placeholder{color:var(--faint);font-weight:600;font-size:17px;letter-spacing:.1em}
+.set input:focus{outline:0;border-color:var(--ink)}
+.chk{display:grid;place-items:center;height:54px;border:1.5px solid var(--line);border-radius:12px;background:var(--raised);color:transparent;transition:transform .1s,background .12s,border-color .12s}
+.chk svg{width:26px;height:26px}
+.chk:active{transform:scale(.94)}
+.set.done .chk{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.set.done input{background:var(--done-bg);border-color:transparent}
+.set.done .set-n{color:var(--ink)}
+.ex.skipped{box-shadow:none;background:transparent}
+.ex.skipped h2{color:var(--faint);text-decoration:line-through;text-decoration-thickness:2px}
+.ex.skipped .ex-meta,.ex.skipped .ex-log,.ex.skipped .ex-cue,.ex.skipped .ex-note,.ex.skipped .ex-form,.ex.skipped .sets{display:none}
+
+/* ---------- dock: timer sits above Finish, never over it ---------- */
+#dock{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:0 14px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 72%,transparent);pointer-events:none}
+#dock>div{max-width:512px;margin:0 auto;pointer-events:auto}
+#dock:empty{display:none}
+.timer{margin-bottom:8px;border:1.5px solid var(--ink);border-radius:14px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow)}
+.timer .slim{position:relative;display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;width:100%;min-height:46px;padding:0 6px 0 14px;border:0;background:none;text-align:left}
+.timer .fill{position:absolute;inset:0;width:0;background:var(--done-bg);transition:width .25s linear}
+.timer .slim>:not(.fill){position:relative}
+.timer .lab{font:600 13px/1 var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timer .t{font:700 26px/1 var(--cond);letter-spacing:.03em;font-variant-numeric:tabular-nums}
+.timer .x{display:grid;place-items:center;width:40px;height:40px;border:0;background:none;color:var(--muted);font-size:22px;line-height:1}
+.timer .big{display:none;padding:6px 14px 16px;text-align:center;border-top:1px solid var(--line)}
+.timer.open .big{display:block}
+.timer.open .slim .t{visibility:hidden}
+.timer .big .t{font-size:88px;line-height:1.05}
+.timer .big .row2{margin-top:8px}
+.timer.over{border-color:var(--accent)}
+.timer.over .slim .t{color:var(--accent)}
+.timer.over .fill{width:100%!important;animation:pulse 1.1s ease-in-out 4}
+@keyframes pulse{50%{opacity:.25}}
+
+/* ---------- history ---------- */
+.hrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;width:100%;min-height:66px;padding:12px 2px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left}
+.hrow b{display:block;font:600 23px/1.05 var(--cond);letter-spacing:.02em;text-transform:uppercase}
+.hrow small{display:block;margin-top:3px;font-size:14px;color:var(--muted)}
+.hrow .n{font:700 22px/1 var(--cond);font-variant-numeric:tabular-nums;text-align:right}
+.hrow .n small{font:600 11px/1 var(--cond);letter-spacing:.14em;text-transform:uppercase}
+.sum{margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font:400 13.5px/1.55 var(--mono);white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text}
+.stack>*+*{margin-top:10px}
+
+/* ---------- backup ---------- */
+.sec{margin-top:26px}
+.sec>h2{padding-bottom:8px;margin-bottom:12px;border-bottom:2px solid var(--ink);font:700 15px/1 var(--cond);letter-spacing:.2em;text-transform:uppercase}
+.sec .fine{margin-bottom:12px}
+.code{width:100%;height:132px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font:400 12px/1.6 var(--mono);letter-spacing:.02em;resize:vertical;white-space:pre;overflow:auto}
+#load-text{font-size:16px;line-height:1.45}
+.code::placeholder{font-family:var(--body);font-size:15px;letter-spacing:0;color:var(--faint);white-space:normal}
+.shots{display:grid;gap:12px;margin-top:12px}
+.shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.shot img{display:block;width:100%;height:auto}
+.shot .btn{border:0;border-top:1px solid var(--line);border-radius:0;color:#191713;min-height:50px;font-size:16px}
+.status{margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;font-size:14.5px;line-height:1.45}
+.status.bad{border-color:var(--accent)}
+.status:empty{display:none}
+input[type=file]{display:none}
+
+#toast{position:fixed;left:50%;bottom:calc(var(--dock,0px) + 22px + env(safe-area-inset-bottom));z-index:20;transform:translate(-50%,12px);max-width:min(92vw,480px);padding:12px 16px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:500;font-size:15px;text-align:center;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="dock"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   PROGRAM — the only place loads live. Edit here, bump VERSION, push.
+   When open loads change, change in ONE edit: the exercise's
+   defaultWeight / defaultReps / target / note, the routine blurb,
+   and TARGETS below.
+   ===================================================================== */
+const VERSION = "2026.11.17-1";
+
+// Home targets card. A label written when a session is graded, not computed.
+const TARGETS = {
+  due: null,                 // routine id, e.g. "work_pull"
+  venue: "",                 // e.g. "Office gym"
+  loads: [],                 // e.g. [["Seated row", "130 × 12"]]
+  updated: ""                // e.g. "17 Nov"
+};
+
+// Lanes: different buildings, different machines. Pins never cross lanes.
+const LANES = [
+  { key: "home",    label: "Home",     venue: "Home",        prefix: "" },
+  { key: "work",    label: "Work",     venue: "Office gym",  prefix: "work_" },
+  { key: "daypass", label: "Day-pass", venue: "Unity",       prefix: "unity_" }
+];
+
+/* STARTER CARDS. Exercise names are placeholders and every load is unset —
+   replace with the real cards. Warm-ups are first and never optional.
+   Rests: main row/press 120 · assisted pull-up 150 · face pull / rear delt 90
+   · arms 75 · easy finisher 60. */
+const ROUTINES = [
+  { id: "pull", name: "Pull", blurb: "Starter card — loads not set", exercises: [
+    { name: "Band pull-apart (warm-up)", sets: 2, repTarget: "15", rest: 60, log: "bodyweight" },
+    { name: "One-arm dumbbell row", sets: 3, repTarget: "8-12", rest: 120, log: "db" },
+    { name: "Pull-up", sets: 3, repTarget: "max", rest: 150, log: "bodyweight" },
+    { name: "Rear delt fly", sets: 3, repTarget: "12-15", rest: 90, log: "db" },
+    { name: "Dumbbell curl", sets: 3, repTarget: "10-12", rest: 75, log: "db" }
+  ]},
+  { id: "push", name: "Push", blurb: "Starter card — loads not set", exercises: [
+    { name: "Push-up (warm-up)", sets: 2, repTarget: "10", rest: 60, log: "bodyweight" },
+    { name: "Dumbbell bench press", sets: 3, repTarget: "8-12", rest: 120, log: "db" },
+    { name: "Dumbbell shoulder press", sets: 3, repTarget: "8-12", rest: 120, log: "db" },
+    { name: "Lateral raise", sets: 3, repTarget: "12-15", rest: 75, log: "db" },
+    { name: "Overhead triceps extension", sets: 3, repTarget: "10-12", rest: 75, log: "db" }
+  ]},
+  { id: "legs", name: "Legs", blurb: "Starter card — loads not set", exercises: [
+    { name: "Bodyweight squat (warm-up)", sets: 2, repTarget: "12", rest: 60, log: "bodyweight" },
+    { name: "Goblet squat", sets: 3, repTarget: "8-12", rest: 120, log: "kb" },
+    { name: "Romanian deadlift", sets: 3, repTarget: "8-12", rest: 120, log: "db" },
+    { name: "Split squat", sets: 3, repTarget: "8-10", rest: 90, log: "db" },
+    { name: "Calf raise", sets: 3, repTarget: "12-15", rest: 60, log: "bodyweight" }
+  ]},
+  { id: "easy", name: "Easy", blurb: "Starter card — loads not set", exercises: [
+    { name: "Walk", sets: 1, repTarget: "20 min", rest: 60, log: "bodyweight" },
+    { name: "Dead hang", sets: 2, repTarget: "30 s", rest: 60, log: "bodyweight" },
+    { name: "Plank", sets: 2, repTarget: "45 s", rest: 60, log: "bodyweight" }
+  ]},
+
+  { id: "work_pull", name: "Work Pull", blurb: "Starter card — only the row is set (130)", exercises: [
+    { name: "Seated row (warm-up)", sets: 1, repTarget: "12", rest: 60, log: "cable" },
+    { name: "Seated row", sets: 3, repTarget: "10-12", rest: 120, target: "130", log: "cable", defaultWeight: 130, defaultReps: "12" },
+    { name: "Assisted pull-up", sets: 3, repTarget: "6-10", rest: 150, log: "assist" },
+    { name: "Face pull", sets: 3, repTarget: "12-15", rest: 90, log: "cable" },
+    { name: "Single-arm rear delt", sets: 2, repTarget: "12-15", rest: 90, log: "cable" },
+    { name: "Cable curl", sets: 3, repTarget: "10-12", rest: 75, log: "cable" }
+  ]},
+  { id: "work_push", name: "Work Push", blurb: "Starter card — loads not set", exercises: [
+    { name: "Chest press (warm-up)", sets: 1, repTarget: "12", rest: 60, log: "machine" },
+    { name: "Chest press", sets: 3, repTarget: "8-12", rest: 120, log: "machine" },
+    { name: "Shoulder press", sets: 3, repTarget: "8-12", rest: 120, log: "machine" },
+    { name: "Assisted dip", sets: 3, repTarget: "6-10", rest: 150, log: "assist" },
+    { name: "Triceps pushdown", sets: 3, repTarget: "10-12", rest: 75, log: "cable" }
+  ]},
+  { id: "work_legs", name: "Work Legs", blurb: "Starter card — loads not set", exercises: [
+    { name: "Leg press (warm-up)", sets: 1, repTarget: "12", rest: 60, log: "machine" },
+    { name: "Leg press", sets: 3, repTarget: "8-12", rest: 120, log: "machine" },
+    { name: "Smith squat", sets: 3, repTarget: "8-10", rest: 120, log: "bar", note: "Bar not weighed — log added plates only." },
+    { name: "Leg curl", sets: 3, repTarget: "10-12", rest: 90, log: "machine" },
+    { name: "Calf raise", sets: 3, repTarget: "12-15", rest: 60, log: "machine" }
+  ]},
+  { id: "work_easy", name: "Work Easy", blurb: "Starter card — loads not set", exercises: [
+    { name: "Treadmill walk", sets: 1, repTarget: "15 min", rest: 60, log: "bodyweight" },
+    { name: "Face pull", sets: 2, repTarget: "15", rest: 90, log: "cable" },
+    { name: "Plank", sets: 2, repTarget: "45 s", rest: 60, log: "bodyweight" }
+  ]},
+
+  { id: "unity_pull", name: "Unity Pull", blurb: "Starter card — loads not set", exercises: [
+    { name: "Lat pulldown (warm-up)", sets: 1, repTarget: "12", rest: 60, log: "cable" },
+    { name: "Lat pulldown", sets: 3, repTarget: "8-12", rest: 120, log: "cable" },
+    { name: "Seated row", sets: 3, repTarget: "10-12", rest: 120, log: "cable" },
+    { name: "Face pull", sets: 3, repTarget: "12-15", rest: 90, log: "cable" },
+    { name: "Cable curl", sets: 3, repTarget: "10-12", rest: 75, log: "cable" }
+  ]},
+  { id: "unity_push", name: "Unity Push", blurb: "Starter card — loads not set", exercises: [
+    { name: "Chest press (warm-up)", sets: 1, repTarget: "12", rest: 60, log: "machine" },
+    { name: "Chest press", sets: 3, repTarget: "8-12", rest: 120, log: "machine" },
+    { name: "Shoulder press", sets: 3, repTarget: "8-12", rest: 120, log: "machine" },
+    { name: "Assisted dip", sets: 3, repTarget: "6-10", rest: 150, log: "assist" },
+    { name: "Triceps pushdown", sets: 3, repTarget: "10-12", rest: 75, log: "cable" }
+  ]}
+];
+
+// Log law: what goes in the weight box.
+const LOG = {
+  db:         ["Dumbbell",   "weight per hand, never the pair sum"],
+  bar:        ["Bar",        "bar plus plates, when the bar weight is known"],
+  cable:      ["Cable",      "the stack number on this machine"],
+  assist:     ["Assist",     "the assist pin — higher pin is more help"],
+  machine:    ["Machine",    "the stack pin on this machine"],
+  kb:         ["Kettlebell", "the bell"],
+  bodyweight: ["Bodyweight", "reps or minutes — weight can stay blank"]
+};
+
+/* =====================================================================
+   State
+   ===================================================================== */
+const KEY = "gym_tracker_v1";
+const $ = (s, r) => (r || document).querySelector(s);
+const app = $("#app"), dock = $("#dock");
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pad2 = n => String(n).padStart(2, "0");
+
+function normState(o) {
+  o = o && typeof o === "object" ? o : {};
+  return {
+    workouts: Array.isArray(o.workouts) ? o.workouts.filter(w => w && typeof w === "object") : [],
+    draft: o.draft && typeof o.draft === "object" && Array.isArray(o.draft.exercises) ? o.draft : null,
+    theme: o.theme === "stealth" ? "stealth" : "default",
+    backup: o.backup && typeof o.backup === "object" ? o.backup : null
+  };
+}
+function loadState() {
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (e) { return normState(null); }
+  if (!raw) return normState(null);
+  try { return normState(JSON.parse(raw)); }
+  catch (e) { try { localStorage.setItem(KEY + "_unreadable_" + Date.now(), raw); } catch (e2) {} return normState(null); }
+}
+let S = loadState(), saveWarned = false;
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch (e) { if (!saveWarned) { saveWarned = true; toast("This browser refused to store data. Back up from History before closing.", 6000); } }
+}
+
+/* =====================================================================
+   Small helpers
+   ===================================================================== */
+const hm = iso => { const d = new Date(iso); return isNaN(d) ? "—" : pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+const day = iso => { const d = new Date(iso); return isNaN(d) ? "—" : d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
+const mmss = sec => { sec = Math.max(0, Math.round(sec)); const m = Math.floor(sec / 60); return (m >= 60 ? Math.floor(m / 60) + ":" + pad2(m % 60) : m) + ":" + pad2(sec % 60); };
+const restText = mmss;
+const doneSets = s => (s.exercises || []).reduce((n, e) => n + (e.sets || []).filter(x => x && x.done).length, 0);
+const allSets = s => (s.exercises || []).reduce((n, e) => n + (e.skipped ? 0 : (e.sets || []).length), 0);
+const minutes = s => { const a = Date.parse(s.startedAt), b = Date.parse(s.finishedAt); return isNaN(a) || isNaN(b) ? null : Math.max(1, Math.round((b - a) / 60000)); };
+function laneOf(id) { id = String(id || ""); return LANES.find(l => l.prefix && id.startsWith(l.prefix)) || LANES[0]; }
+const patternOf = id => String(id || "").slice(laneOf(id).prefix.length);
+const routine = id => ROUTINES.find(r => r.id === id);
+
+let toastT;
+function toast(msg, ms) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), ms || 2600);
+}
+async function copyText(text) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; } } catch (e) {}
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy"); ta.remove(); return !!ok;
+  } catch (e) { return false; }
+}
+function selectNode(el) { try { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } catch (e) {} }
+const ICON = {
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  chev: '<svg width="10" height="16" viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2l6 6-6 6"/></svg>',
+  back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>'
+};
+
+/* =====================================================================
+   Sessions
+   ===================================================================== */
+function newSession(r) {
+  return {
+    routineId: r.id, name: r.name, startedAt: new Date().toISOString(), note: "",
+    exercises: r.exercises.map(e => ({
+      name: e.name, repTarget: e.repTarget || "", rest: e.rest || 0, target: e.target || "", note: e.note || "",
+      log: e.log || "", cue: e.cue || "", form: e.form || null, optional: !!e.optional,
+      sets: Array.from({ length: Math.max(1, e.sets || 1) }, () => ({
+        w: e.defaultWeight == null ? "" : String(e.defaultWeight),
+        r: e.defaultReps == null ? "" : String(e.defaultReps),
+        done: false
+      }))
+    }))
+  };
+}
+function startRoutine(id) {
+  const r = routine(id); if (!r) return;
+  if (S.draft) {
+    if (S.draft.routineId === id) return go("#/session");
+    if (!confirm("Discard the unfinished " + S.draft.name + " (" + doneSets(S.draft) + " sets checked) and start " + r.name + "?")) return;
+  }
+  // Same pattern in a different lane on the same day needs an explicit yes.
+  const today = new Date().toDateString();
+  const clash = S.workouts.find(w => new Date(w.startedAt).toDateString() === today && patternOf(w.routineId) === patternOf(id) && laneOf(w.routineId).key !== laneOf(id).key);
+  if (clash && !confirm("You already logged " + clash.name + " today. Start " + r.name + " as well?")) return;
+  S.draft = newSession(r); save(); go("#/session");
+}
+function setLine(e, x) {
+  const w = String(x.w == null ? "" : x.w).trim(), r = String(x.r == null ? "" : x.r).trim();
+  return (w || (e.log === "bodyweight" ? "bw" : "—")) + " x " + (r || "—");
+}
+function summary(s) {
+  const L = [s.name || "Workout", "started " + hm(s.startedAt) + " · finished " + (s.finishedAt ? hm(s.finishedAt) : "—")];
+  if (s.note && String(s.note).trim()) L.push("note: " + String(s.note).trim());
+  for (const e of s.exercises || []) {
+    const head = [e.name, e.log, e.target ? "target " + e.target : ""].filter(Boolean).join("  ");
+    const done = (e.sets || []).filter(x => x && x.done);
+    L.push("");
+    if (e.skipped || (e.optional && !done.length)) { L.push(head + "  — skipped (optional)"); continue; }
+    L.push(head);
+    if (!done.length) L.push("  no sets logged"); else for (const x of done) L.push("  " + setLine(e, x));
+  }
+  return L.join("\n");
+}
+async function finish() {
+  const d = S.draft; if (!d) return;
+  if (!doneSets(d)) return toast("Check at least one set first");
+  d.finishedAt = new Date().toISOString();
+  S.workouts.push(d); S.draft = null; save(); stopRest();
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  const ok = await copyText(summary(d));
+  if (ok) { go("#/"); toast("Saved · summary copied"); }
+  else { go("#/history/" + (S.workouts.length - 1)); toast("Saved. Copy failed — the text is selected, copy it by hand.", 5000); setTimeout(() => { const el = $(".sum"); if (el) selectNode(el); }, 80); }
+}
+
+/* =====================================================================
+   Rest timer, beep, wake lock
+   ===================================================================== */
+const T = { state: "idle", endAt: 0, total: 0, label: "", open: false, iv: null };
+let AC = null, WL = null;
+function audioReady() { try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); } catch (e) {} }
+function beep() {
+  try {
+    if (!AC) return; const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    o.type = "sine"; o.frequency.value = 880; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t + 0.5);
+  } catch (e) {}
+}
+function startRest(sec, label) {
+  if (!sec) return;
+  T.state = "run"; T.total = sec; T.endAt = Date.now() + sec * 1000; T.label = label;
+  renderDock(); if (!T.iv) T.iv = setInterval(tickRest, 250);
+}
+function stopRest() { T.state = "idle"; clearInterval(T.iv); T.iv = null; renderDock(); }
+function tickRest() {
+  if (T.state !== "run") return;
+  const left = (T.endAt - Date.now()) / 1000;
+  if (left <= 0) {            // zero: beep once, collapse itself
+    T.state = "over"; T.open = false; clearInterval(T.iv); T.iv = null;
+    beep(); try { navigator.vibrate && navigator.vibrate([180, 90, 180]); } catch (e) {}
+    return renderDock();
+  }
+  dock.querySelectorAll(".t").forEach(el => el.textContent = mmss(Math.ceil(left)));
+  const f = $(".fill", dock); if (f) f.style.width = (100 - (left / T.total) * 100).toFixed(1) + "%";
+}
+async function wakeOn() { try { if ("wakeLock" in navigator && !WL) { WL = await navigator.wakeLock.request("screen"); WL.addEventListener("release", () => { WL = null; }); } } catch (e) {} }
+function wakeOff() { try { WL && WL.release(); } catch (e) {} WL = null; }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { if (view === "session") wakeOn(); tickRest(); } });
+
+function renderDock() {
+  if (view !== "session" || !S.draft) { dock.innerHTML = ""; return setDock(); }
+  let t = "";
+  if (T.state !== "idle") {
+    const over = T.state === "over", left = over ? 0 : Math.ceil((T.endAt - Date.now()) / 1000);
+    t = '<div class="timer' + (T.open ? " open" : "") + (over ? " over" : "") + '">' +
+      '<div class="slim" data-act="timer-toggle" role="button" tabindex="0" aria-label="Rest timer"><i class="fill"></i>' +
+      '<span class="lab">' + (over ? "Rest over · " : "Rest · ") + esc(T.label) + '</span><span class="t">' + mmss(left) + '</span>' +
+      '<button class="x" data-act="timer-stop" aria-label="Dismiss timer">×</button></div>' +
+      '<div class="big"><div class="t">' + mmss(left) + '</div><div class="row2"><button class="btn quiet" data-act="timer-add">+30 s</button><button class="btn quiet" data-act="timer-stop">Skip rest</button></div></div></div>';
+  }
+  dock.innerHTML = "<div>" + t + '<button class="btn ink" data-act="finish">Finish workout</button></div>';
+  setDock(); tickRest();
+}
+function setDock() { document.body.style.setProperty("--dock", dock.offsetHeight + "px"); }
+
+/* =====================================================================
+   Views
+   ===================================================================== */
+let view = "home", clock = null;
+function go(hash) { if (location.hash === hash || (hash === "#/" && !location.hash)) render(); else location.hash = hash; }
+window.addEventListener("hashchange", render);
+
+function render() {
+  const h = location.hash.replace(/^#\/?/, ""), parts = h.split("/");
+  const prev = view;
+  view = parts[0] === "session" && S.draft ? "session" : parts[0] === "history" ? "history" : parts[0] === "backup" ? "backup" : "home";
+  clearInterval(clock); clock = null;
+  if (prev === "session" && view !== "session") { wakeOff(); stopRest(); }
+  if (view === "session") { viewSession(); wakeOn(); }
+  else if (view === "history") { parts[1] != null && parts[1] !== "" ? viewWorkout(+parts[1]) : viewHistory(); }
+  else if (view === "backup") viewBackup();
+  else viewHome();
+  renderDock();
+  if (prev !== view || view !== "session") window.scrollTo(0, 0);
+}
+
+/* ---------- home ---------- */
+function viewHome() {
+  const due = routine(TARGETS.due);
+  let h = '<div class="view"><header class="top"><div class="mark"><b>GYM<i>.</i></b><span>v' + esc(VERSION) + '</span></div>' +
+    '<button class="theme" data-act="theme" aria-label="Switch theme">' + (S.theme === "stealth" ? "Default" : "Stealth") + "</button></header>";
+
+  if (S.draft) {
+    h += '<section class="card resume"><div class="caps">Unfinished</div><h2>' + esc(S.draft.name) + "</h2><p>Started " + esc(day(S.draft.startedAt)) + " " + hm(S.draft.startedAt) +
+      " · " + doneSets(S.draft) + " of " + allSets(S.draft) + ' sets checked</p><div class="row2"><button class="btn ink" data-act="resume">Resume</button><button class="btn quiet danger" data-act="discard">Discard</button></div></section>';
+  }
+
+  h += '<section class="card due"><div class="caps"><span>Due next</span>' + (TARGETS.updated ? "<span>set " + esc(TARGETS.updated) + "</span>" : "") + "</div>";
+  if (due) {
+    h += "<h2>" + esc(due.name) + '</h2><div class="venue">' + esc(TARGETS.venue || laneOf(due.id).venue) + "</div>";
+    if (TARGETS.loads && TARGETS.loads.length) h += "<ul>" + TARGETS.loads.map(l => Array.isArray(l) ? "<li><span>" + esc(l[0]) + "</span><b>" + esc(l[1]) + "</b></li>" : "<li><span>" + esc(l) + "</span></li>").join("") + "</ul>";
+    else h += '<p class="unset">No open loads written for this card.</p><div style="height:14px"></div>';
+    h += '<button class="btn primary" data-act="start" data-id="' + esc(due.id) + '">Start ' + esc(due.name) + "</button>";
+  } else {
+    h += '<p class="unset">Nothing is marked due yet. The due card is written when a session is graded — pick a card below.</p>';
+  }
+  h += "</section>";
+
+  for (const lane of LANES) {
+    const list = ROUTINES.filter(r => laneOf(r.id) === lane);
+    if (!list.length) continue;
+    h += '<section class="lane"><div class="lane-h"><h3>' + esc(lane.label) + "</h3><span>" + esc(lane.venue === lane.label ? list.length + " cards" : lane.venue) + "</span></div>";
+    for (const r of list) {
+      h += '<button class="rt" data-act="start" data-id="' + esc(r.id) + '"><span><b>' + esc(r.name) + "</b><small>" + esc(r.blurb || "") + '</small></span><span class="go">' +
+        (TARGETS.due === r.id ? '<span class="pill">DUE</span>' : "") + ICON.chev + "</span></button>";
+    }
+    h += "</section>";
+  }
+
+  const n = S.workouts.length, unsaved = n - (S.backup && S.backup.n || 0);
+  const bk = !n ? "Nothing to back up yet" : !S.backup ? "Never backed up" : unsaved > 0 ? unsaved + " workout" + (unsaved > 1 ? "s" : "") + " since last save" : "Up to date";
+  h += '<nav class="foot"><a href="#/history"><b>History</b><small>' + n + " workout" + (n === 1 ? "" : "s") + '</small></a><a href="#/backup" class="' + (n && (!S.backup || unsaved > 0) ? "warn" : "") + '"><b>Backup</b><small>' + bk + "</small></a></nav></div>";
+  app.innerHTML = h;
+}
+
+/* ---------- session ---------- */
+function viewSession() {
+  const d = S.draft;
+  let h = '<div class="view"><div class="bar"><button class="back" data-act="home">' + ICON.back + 'Home</button><h1>' + esc(d.name) + '</h1><span class="side" id="clock"></span></div>' +
+    '<div class="prog"><i></i></div>' +
+    '<textarea class="snote" rows="1" placeholder="Session note" aria-label="Session note">' + esc(d.note || "") + "</textarea>";
+  d.exercises.forEach((e, i) => {
+    const law = LOG[e.log];
+    h += '<section class="ex' + (e.skipped ? " skipped" : "") + '" data-i="' + i + '"><div class="ex-h"><span class="ex-n">' + pad2(i + 1) + "</span><h2>" + esc(e.name) + "</h2>" +
+      (e.optional ? '<button class="skip" data-act="skip">' + (e.skipped ? "Undo skip" : "Skip") + "</button>" : "<span></span>") + "</div>" +
+      '<p class="ex-meta"><b>' + e.sets.length + " × " + esc(e.repTarget || "—") + "</b>" + (e.rest ? " · rest " + restText(e.rest) : "") + (e.target ? " · target <b>" + esc(e.target) + "</b>" : "") + "</p>" +
+      (law ? '<p class="ex-log"><span class="tag">' + law[0] + "</span><span>Write " + law[1] + ".</span></p>" : "") +
+      (e.optional ? '<p class="ex-log"><span class="tag opt">Optional</span></p>' : "") +
+      (e.cue ? '<p class="ex-cue">' + esc(e.cue) + "</p>" : "") +
+      (e.note ? '<p class="ex-note">' + esc(e.note) + "</p>" : "");
+    if (e.form && typeof e.form === "object") {
+      const links = [["exrx", "ExRx"], ["wiki", "Wiki"], ["yt", "Video"]].filter(k => e.form[k[0]]);
+      if (links.length) h += '<p class="ex-form">' + links.map(k => '<a href="' + esc(e.form[k[0]]) + '" target="_blank" rel="noopener">' + k[1] + "</a>").join("") + "</p>";
+    }
+    h += '<div class="sets"><div class="set-h"><span>Set</span><span>' + (e.log === "assist" ? "Pin" : "lb") + "</span><span>Reps</span><span>Done</span></div>";
+    e.sets.forEach((x, j) => {
+      h += '<div class="set' + (x.done ? " done" : "") + '" data-s="' + j + '"><span class="set-n">' + (j + 1) + "</span>" +
+        '<input class="w" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="' + (e.log === "bodyweight" ? "—" : e.log === "assist" ? "pin" : "lb") + '" aria-label="Set ' + (j + 1) + ' weight" value="' + esc(x.w) + '">' +
+        '<input class="r" inputmode="numeric" autocomplete="off" enterkeyhint="done" placeholder="reps" aria-label="Set ' + (j + 1) + ' reps" value="' + esc(x.r) + '">' +
+        '<button class="chk" data-act="check" aria-pressed="' + (x.done ? "true" : "false") + '" aria-label="Set ' + (j + 1) + ' done">' + ICON.check + "</button></div>";
+    });
+    h += "</div></section>";
+  });
+  app.innerHTML = h + "</div>";
+  const tick = () => { const c = $("#clock"); if (c && S.draft) c.textContent = mmss((Date.now() - Date.parse(S.draft.startedAt)) / 1000); };
+  tick(); clock = setInterval(tick, 1000); progress(); grow($(".snote"));
+}
+function progress() { const d = S.draft, p = $(".prog i"); if (d && p) { const a = allSets(d); p.style.width = (a ? Math.min(100, doneSets(d) / a * 100) : 0) + "%"; } }
+function grow(ta) { if (ta) { ta.style.height = "auto"; ta.style.height = Math.max(50, ta.scrollHeight + 2) + "px"; } }
+
+/* ---------- history ---------- */
+function viewHistory() {
+  let h = '<div class="view"><div class="bar"><button class="back" data-act="home">' + ICON.back + 'Home</button><h1>History</h1><span class="side"></span></div>';
+  if (!S.workouts.length) h += '<p class="empty">No workouts saved on this phone yet.</p>';
+  for (let i = S.workouts.length - 1; i >= 0; i--) {
+    const w = S.workouts[i], m = minutes(w);
+    h += '<button class="hrow" data-act="open" data-i="' + i + '"><span><b>' + esc(w.name || "Workout") + "</b><small>" + esc(day(w.startedAt)) + " · " + hm(w.startedAt) + (m ? " · " + m + " min" : "") +
+      '</small></span><span class="n">' + doneSets(w) + "<br><small>sets</small></span></button>";
+  }
+  h += '<div class="sec"><a class="btn quiet" href="#/backup" style="text-decoration:none">Backup &amp; restore</a></div></div>';
+  app.innerHTML = h;
+}
+function viewWorkout(i) {
+  const w = S.workouts[i];
+  if (!w) return go("#/history");
+  const m = minutes(w);
+  app.innerHTML = '<div class="view"><div class="bar"><button class="back" data-act="history">' + ICON.back + 'History</button><h1>' + esc(w.name || "Workout") + '</h1><span class="side"></span></div>' +
+    '<p class="fine" style="margin-top:16px">' + esc(day(w.startedAt)) + (m ? " · " + m + " min" : "") + " · " + doneSets(w) + " sets</p>" +
+    '<pre class="sum">' + esc(summary(w)) + '</pre><div class="stack"><button class="btn ink" data-act="copy-sum" data-i="' + i + '">Copy summary</button>' +
+    '<button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
+}
+
+/* ---------- backup ---------- */
+let SAVE = null;          // { lines, text } for the current state, built when the view opens
+let RESTORE = [];         // blocks of raw lines read so far (pasted text or images)
+function viewBackup() {
+  RESTORE = [];
+  const n = S.workouts.length;
+  app.innerHTML = '<div class="view"><div class="bar"><button class="back" data-act="home">' + ICON.back + 'Home</button><h1>Backup</h1><span class="side"></span></div>' +
+    '<p class="fine" style="margin-top:16px">Logs live only in this browser on this phone. <b id="persist"></b> A save string is the whole log — ' + n + " workout" + (n === 1 ? "" : "s") + (S.draft ? " and the unfinished session" : "") + " — as text you can keep anywhere.</p>" +
+
+    '<section class="sec"><h2>Save</h2><textarea class="code" id="save-text" readonly aria-label="Save string">building…</textarea>' +
+    '<p class="fine" id="save-stats" style="margin-top:8px"></p><div class="stack"><button class="btn ink" data-act="copy-save" disabled>Copy save string</button>' +
+    '<button class="btn quiet" data-act="save-image" disabled>Make save image</button></div><div class="shots" id="shots"></div></section>' +
+
+    '<section class="sec"><h2>Restore</h2><p class="fine">Paste a save string, or pick a save image or a screenshot of one. Restoring replaces what is on this phone, after you confirm.</p>' +
+    '<textarea class="code" id="load-text" placeholder="Paste a save string here" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>' +
+    '<div class="stack" style="margin-top:10px"><button class="btn ink" data-act="restore-text">Restore from text</button>' +
+    '<label class="btn quiet" tabindex="0">Read from image<input type="file" id="img-in" accept="image/*" multiple></label></div><div class="status" id="load-status"></div></section>' +
+
+    '<section class="sec"><h2>JSON file</h2><p class="fine">The raw log, for moving in from the old tracker or keeping a file copy.</p>' +
+    '<div class="row2"><button class="btn quiet" data-act="export">Export</button><label class="btn quiet" tabindex="0">Import<input type="file" id="json-in" accept="application/json,.json"></label></div></section></div>';
+  if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { const el = $("#persist"); if (el) el.textContent = p ? "The browser has marked this storage as persistent." : "The browser may clear it without asking."; }).catch(() => {});
+  SAVE = null;
+  encodeSave(S).then(sv => {
+    SAVE = sv; const ta = $("#save-text"); if (!ta) return;
+    ta.value = sv.lines.map(showLine).join("\n");
+    const pages = Math.ceil(sv.lines.length / PAGE);
+    $("#save-stats").textContent = sv.chars.toLocaleString() + " letters · " + sv.lines.length + " lines · " + pages + " image" + (pages > 1 ? "s" : "");
+    app.querySelectorAll('[data-act="copy-save"],[data-act="save-image"]').forEach(b => b.disabled = false);
+  }).catch(e => { const ta = $("#save-text"); if (ta) ta.value = "Could not build the save string: " + e.message; });
+}
+function markBackup() { S.backup = { at: new Date().toISOString(), n: S.workouts.length }; save(); }
+
+/* =====================================================================
+   Events
+   ===================================================================== */
+document.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-act]"); if (!b) return;
+  const act = b.dataset.act;
+  if (act === "start") return startRoutine(b.dataset.id);
+  if (act === "resume") return go("#/session");
+  if (act === "discard") { if (S.draft && confirm("Discard the unfinished " + S.draft.name + "? Its checked sets are lost.")) { S.draft = null; save(); render(); } return; }
+  if (act === "home") return go("#/");
+  if (act === "history") return go("#/history");
+  if (act === "theme") { S.theme = S.theme === "stealth" ? "default" : "stealth"; save(); applyTheme(); return render(); }
+  if (act === "open") return go("#/history/" + b.dataset.i);
+  if (act === "finish") return finish();
+  if (act === "timer-toggle") { T.open = !T.open; return renderDock(); }
+  if (act === "timer-stop") { ev.stopPropagation(); return stopRest(); }
+  if (act === "timer-add") { if (T.state === "run") { T.endAt += 30000; T.total += 30; tickRest(); } return; }
+  if (act === "copy-sum") { const w = S.workouts[+b.dataset.i]; if (w) copyText(summary(w)).then(ok => { if (ok) toast("Summary copied"); else { selectNode($(".sum")); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
+  if (act === "delete") { const i = +b.dataset.i, w = S.workouts[i]; if (w && confirm("Delete " + (w.name || "this workout") + " from " + day(w.startedAt) + "? This cannot be undone.")) { S.workouts.splice(i, 1); save(); go("#/history"); toast("Deleted"); } return; }
+  if (act === "copy-save") { if (SAVE) copyText(SAVE.text).then(ok => { if (ok) { markBackup(); toast("Save string copied · " + SAVE.chars.toLocaleString() + " letters"); } else { const ta = $("#save-text"); ta.focus(); ta.select(); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
+  if (act === "save-image") return makeSaveImages();
+  if (act === "share-img") return shareImage(+b.dataset.i);
+  if (act === "restore-text") return restoreFromText();
+  if (act === "export") return exportJSON();
+
+  const exEl = b.closest(".ex"); if (!exEl || !S.draft) return;
+  const e = S.draft.exercises[+exEl.dataset.i];
+  if (act === "skip") { e.skipped = !e.skipped; save(); exEl.classList.toggle("skipped", e.skipped); b.textContent = e.skipped ? "Undo skip" : "Skip"; return progress(); }
+  if (act === "check") {
+    const row = b.closest(".set"), x = e.sets[+row.dataset.s];
+    x.done = !x.done; save();
+    row.classList.toggle("done", x.done); b.setAttribute("aria-pressed", x.done ? "true" : "false"); progress();
+    if (x.done) { audioReady(); try { navigator.vibrate && navigator.vibrate(12); } catch (err) {} startRest(e.rest, e.name); }
+  }
+});
+document.addEventListener("keydown", ev => { if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches('label.btn,[role="button"]')) { ev.preventDefault(); ev.target.click(); } });
+// Every keystroke lands in the draft.
+document.addEventListener("input", ev => {
+  const el = ev.target; if (!S.draft || view !== "session") return;
+  if (el.classList.contains("snote")) { S.draft.note = el.value; grow(el); return save(); }
+  const row = el.closest(".set"), exEl = el.closest(".ex"); if (!row || !exEl) return;
+  const x = S.draft.exercises[+exEl.dataset.i].sets[+row.dataset.s];
+  if (el.classList.contains("w")) x.w = el.value; else if (el.classList.contains("r")) x.r = el.value;
+  save();
+});
+document.addEventListener("change", ev => {
+  if (ev.target.id === "img-in") { const f = [...ev.target.files]; ev.target.value = ""; if (f.length) restoreFromImages(f); }
+  if (ev.target.id === "json-in") { const f = ev.target.files[0]; ev.target.value = ""; if (f) importJSON(f); }
+});
+window.addEventListener("resize", setDock);
+
+function applyTheme() {
+  document.documentElement.dataset.theme = S.theme;
+  const m = $('meta[name="theme-color"]'); if (m) m.content = S.theme === "stealth" ? "#09090A" : "#F1EDE4";
+}
+
+/* =====================================================================
+   Save string
+   16 letters that OCR does not confuse, 2 letters per byte. Lines carry
+   40 payload letters + 4 check letters (CRC of line number + payload), so
+   a bad line is caught, located and often repaired. A CRC-32 covers the lot.
+   ===================================================================== */
+const A16 = "ACDEHKLNPRSTUXYZ", LINE = 40, CHK = 4, PAGE = 180;
+const utf8 = new TextEncoder(), utf8d = new TextDecoder();
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function lineCheck(idx, payload) { const v = crc32(utf8.encode(idx + ":" + payload)) & 0xFFFF; return A16[v >>> 12] + A16[v >>> 8 & 15] + A16[v >>> 4 & 15] + A16[v & 15]; }
+function toLetters(u8) { let s = ""; for (let i = 0; i < u8.length; i++) s += A16[u8[i] >> 4] + A16[u8[i] & 15]; return s; }
+function fromLetters(s) { const u = new Uint8Array(s.length >> 1); for (let i = 0; i < u.length; i++) u[i] = A16.indexOf(s[2 * i]) << 4 | A16.indexOf(s[2 * i + 1]); return u; }
+const showLine = l => l.slice(0, -CHK).match(/.{1,5}/g).join(" ") + "  " + l.slice(-CHK);
+async function pipe(u8, stream) { return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(stream)).arrayBuffer()); }
+
+const secs = iso => { const t = Date.parse(iso); return isNaN(t) ? 0 : Math.round(t / 1000); };
+const iso = s => s ? new Date(s * 1000).toISOString() : undefined;
+function packSession(s) {
+  return [s.routineId || "", s.name || "", secs(s.startedAt), secs(s.finishedAt), s.note || "", (s.exercises || []).map(e => [
+    e.name || "", e.log || "", e.target || "", e.repTarget || "", e.rest || 0, e.note || "", e.cue || "", e.form || 0, (e.optional ? 1 : 0) | (e.skipped ? 2 : 0),
+    (e.sets || []).flatMap(x => [x.w == null ? "" : String(x.w), x.r == null ? "" : String(x.r), x.done ? 1 : 0])
+  ])];
+}
+function unpackSession(a) {
+  const s = { routineId: a[0], name: a[1], startedAt: iso(a[2]), note: a[4], exercises: a[5].map(e => {
+    const sets = []; for (let i = 0; i + 2 < e[9].length; i += 3) sets.push({ w: e[9][i], r: e[9][i + 1], done: !!e[9][i + 2] });
+    const o = { name: e[0], repTarget: e[3], rest: e[4], target: e[2], note: e[5], log: e[1], cue: e[6], form: e[7] || null, optional: !!(e[8] & 1), sets };
+    if (e[8] & 2) o.skipped = true; return o;
+  }) };
+  if (a[3]) s.finishedAt = iso(a[3]);
+  return s;
+}
+async function encodeSave(st) {
+  let body = utf8.encode(JSON.stringify([1, st.theme === "stealth" ? 1 : 0, st.workouts.map(packSession), st.draft ? packSession(st.draft) : 0])), flags = 0;
+  if (window.CompressionStream) { try { const z = await pipe(body, new CompressionStream("deflate-raw")); if (z.length < body.length) { body = z; flags = 1; } } catch (e) {} }
+  const all = new Uint8Array(9 + body.length), c = crc32(body), n = body.length;
+  all.set([1, flags, c >>> 24, c >>> 16 & 255, c >>> 8 & 255, c & 255, n >>> 16 & 255, n >>> 8 & 255, n & 255]); all.set(body, 9);
+  const letters = toLetters(all), lines = [];
+  for (let i = 0; i < letters.length; i += LINE) { const p = letters.slice(i, i + LINE); lines.push(p + lineCheck(lines.length, p)); }
+  return { lines, chars: letters.length + lines.length * CHK, text: lines.map(showLine).join("\n") };
+}
+function saveShape(payload0) {             // read total size from the header in line 0
+  if (payload0.length < 18) return null;
+  const b = fromLetters(payload0.slice(0, 18)); if (b[0] !== 1) return null;
+  const chars = (9 + (b[6] << 16 | b[7] << 8 | b[8])) * 2, total = Math.ceil(chars / LINE);
+  return { total, lastLen: chars - (total - 1) * LINE + CHK };
+}
+const verify = (idx, raw) => raw.length > CHK && lineCheck(idx, raw.slice(0, -CHK)) === raw.slice(-CHK);
+function repair(idx, raw, want) {          // one wrong, missing or extra letter — accepted only if exactly one fix checks out
+  const fixes = new Set(), n = raw.length, tryIt = c => { if (verify(idx, c)) fixes.add(c); };
+  if (n === want) for (let i = 0; i < n; i++) for (const ch of A16) { if (ch !== raw[i]) tryIt(raw.slice(0, i) + ch + raw.slice(i + 1)); }
+  else if (n === want - 1) for (let i = 0; i <= n; i++) for (const ch of A16) tryIt(raw.slice(0, i) + ch + raw.slice(i));
+  else if (n === want + 1) for (let i = 0; i < n; i++) tryIt(raw.slice(0, i) + raw.slice(i + 1));
+  return fixes.size === 1 ? [...fixes][0] : null;
+}
+// Text (pasted or OCR'd) -> raw lines of letters only.
+function rawLines(text) {
+  const clean = s => s.toUpperCase().replace(/[^A-Z]/g, "");
+  let lines = String(text).split(/\r?\n/).map(clean).filter(l => l.length >= 6);
+  if (!lines.some(l => l.length === LINE + CHK)) {      // pasted as one run: rebuild the lines
+    const all = lines.join(""); lines = [];
+    for (let i = 0; i < all.length; i += LINE + CHK) lines.push(all.slice(i, i + LINE + CHK));
+  }
+  return lines;
+}
+// Blocks of raw lines (one block per image / paste) -> the save, or what is missing.
+function assemble(blocks) {
+  const FULL = LINE + CHK, flat = blocks.flat();
+  let shape = null, first = flat.find(l => l.length === FULL && verify(0, l));
+  if (!first) for (const l of flat) { if (Math.abs(l.length - FULL) <= 1) { const f = repair(0, l, FULL); if (f && saveShape(f)) { first = f; break; } } }
+  if (first) shape = saveShape(first);
+  if (!shape) {      // a very short save is a single short line
+    first = flat.find(l => l.length > 18 + CHK && verify(0, l) && saveShape(l) && saveShape(l).total === 1 && saveShape(l).lastLen === l.length);
+    if (first) shape = saveShape(first);
+  }
+  if (!shape) return { error: "The first line of the save was not found. It has to be in the text or image." };
+  const { total, lastLen } = shape, want = i => i === total - 1 ? lastLen : FULL;
+  const got = new Map(), bad = new Map(); let repaired = 0;
+  for (const block of blocks) {
+    let exp = null;
+    for (const raw of block) {
+      if (exp != null && exp < total && raw.length === want(exp) && verify(exp, raw)) { got.set(exp, raw); exp++; continue; }
+      let hit = -1;
+      for (let i = 0; i < total; i++) if (raw.length === want(i) && verify(i, raw) && (hit < 0 || Math.abs(i - (exp || 0)) < Math.abs(hit - (exp || 0)))) hit = i;
+      if (hit >= 0) { got.set(hit, raw); exp = hit + 1; continue; }
+      if (exp != null && exp < total && Math.abs(raw.length - want(exp)) <= 1) {
+        const f = repair(exp, raw, want(exp));
+        if (f) { got.set(exp, f); repaired++; } else if (!bad.has(exp)) bad.set(exp, raw);
+        exp++;
+      }
+    }
+  }
+  if (!got.has(0)) got.set(0, first);
+  const missing = []; for (let i = 0; i < total; i++) if (!got.has(i)) missing.push(i);
+  return { total, got, bad, repaired, missing };
+}
+async function decodeSave(asm) {
+  let letters = ""; for (let i = 0; i < asm.total; i++) letters += asm.got.get(i).slice(0, -CHK);
+  const all = fromLetters(letters), n = all[6] << 16 | all[7] << 8 | all[8]; let body = all.subarray(9, 9 + n);
+  const c = (all[2] << 24 | all[3] << 16 | all[4] << 8 | all[5]) >>> 0;
+  if (body.length !== n || crc32(body) !== c) throw new Error("The save does not add up (checksum mismatch). One line is wrong.");
+  if (all[1] & 1) { if (!window.DecompressionStream) throw new Error("This browser is too old to unpack the save."); body = await pipe(body, new DecompressionStream("deflate-raw")); }
+  const p = JSON.parse(utf8d.decode(body));
+  if (!Array.isArray(p) || p[0] !== 1) throw new Error("Unknown save version.");
+  return { theme: p[1] ? "stealth" : "default", workouts: p[2].map(unpackSession), draft: p[3] ? unpackSession(p[3]) : null };
+}
+function applyRestore(st, source) {
+  st = normState(st);
+  const msg = "Replace what is on this phone (" + S.workouts.length + " workouts" + (S.draft ? ", 1 unfinished" : "") + ") with the " + source + " (" + st.workouts.length + " workouts" + (st.draft ? ", 1 unfinished" : "") + ")?";
+  if (!confirm(msg)) return false;
+  st.backup = { at: new Date().toISOString(), n: st.workouts.length };
+  S = st; save(); applyTheme(); RESTORE = []; go("#/"); toast("Restored " + st.workouts.length + " workout" + (st.workouts.length === 1 ? "" : "s"));
+  return true;
+}
+function say(html, bad) { const el = $("#load-status"); if (el) { el.innerHTML = html; el.classList.toggle("bad", !!bad); } }
+async function tryRestore(blocks, source) {
+  const asm = assemble(blocks);
+  if (asm.error) { say(esc(asm.error), true); return false; }
+  if (asm.missing.length) {
+    const box = $("#load-text");
+    if (box) { const out = []; for (let i = 0; i < asm.total; i++) out.push(asm.got.has(i) ? showLine(asm.got.get(i)) : asm.bad.has(i) ? asm.bad.get(i) : ""); box.value = out.join("\n"); }
+    const list = asm.missing.slice(0, 12).map(i => i + 1).join(", ") + (asm.missing.length > 12 ? "…" : "");
+    say("Read <b>" + (asm.total - asm.missing.length) + " of " + asm.total + "</b> lines" + (asm.repaired ? " (" + asm.repaired + " repaired)" : "") + ". Still missing or unreadable: line " + esc(list) +
+      ". Add another image that shows those lines, or fix them in the box above and press Restore from text.", true);
+    return false;
+  }
+  let st; try { st = await decodeSave(asm); } catch (e) { say(esc(e.message), true); return false; }
+  say("Read all " + asm.total + " lines" + (asm.repaired ? " (" + asm.repaired + " repaired)" : "") + ". " + st.workouts.length + " workouts in the save.");
+  return applyRestore(st, source);
+}
+function restoreFromText() {
+  const text = $("#load-text").value;
+  if (!text.trim()) return say("Paste a save string first.", true);
+  tryRestore([rawLines(text)], "pasted save");
+}
+
+/* ---------- save image ---------- */
+let SHOTS = [];
+async function makeSaveImages() {
+  if (!SAVE) return;
+  const box = $("#shots"); box.innerHTML = '<p class="fine">Drawing…</p>';
+  try { await document.fonts.load('30px "Cousine"'); } catch (e) {}
+  const pages = Math.ceil(SAVE.lines.length / PAGE), W = 1080, FS = 30, LH = 46, MX = 70, TOP = 120;
+  const stamp = new Date().toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  SHOTS = []; let html = "";
+  for (let p = 0; p < pages; p++) {
+    const part = SAVE.lines.slice(p * PAGE, (p + 1) * PAGE);
+    const c = document.createElement("canvas"); c.width = W; c.height = TOP + part.length * LH + 60;
+    const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, W, c.height);
+    g.textBaseline = "top"; g.fillStyle = "#8a8a8a"; g.font = '22px "Cousine", monospace';
+    g.fillText("gym save " + (p + 1) + "/" + pages + " - " + stamp, MX, 52);
+    g.fillStyle = "#000"; g.font = FS + 'px "Cousine", monospace';
+    part.forEach((l, i) => g.fillText(showLine(l), MX, TOP + i * LH));
+    const blob = await new Promise(r => c.toBlob(r, "image/png"));
+    const png = pngWithText(new Uint8Array(await blob.arrayBuffer()), "gym-save", SAVE.text);     // the exact text rides inside the file too
+    const file = new File([png], "gym-save-" + new Date().toISOString().slice(0, 10) + (pages > 1 ? "-" + (p + 1) : "") + ".png", { type: "image/png" });
+    SHOTS.push(file);
+    html += '<div class="shot"><img alt="Save image ' + (p + 1) + " of " + pages + '" src="' + URL.createObjectURL(file) + '"><button class="btn" data-act="share-img" data-i="' + p + '">Save / share image' + (pages > 1 ? " " + (p + 1) + " of " + pages : "") + "</button></div>";
+  }
+  box.innerHTML = '<p class="fine">Keep the image itself where you can — a saved image restores exactly. A screenshot works too, read back by OCR.</p>' + html;
+  markBackup();
+}
+async function shareImage(i) {
+  const f = SHOTS[i]; if (!f) return;
+  try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f] }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+}
+function pngWithText(u8, key, text) {      // insert a tEXt chunk right after IHDR
+  const data = utf8.encode(key + "\0" + text), ch = new Uint8Array(12 + data.length), dv = new DataView(ch.buffer);
+  dv.setUint32(0, data.length); ch.set([0x74, 0x45, 0x58, 0x74], 4); ch.set(data, 8); dv.setUint32(8 + data.length, crc32(ch.subarray(4, 8 + data.length)));
+  const out = new Uint8Array(u8.length + ch.length); out.set(u8.subarray(0, 33)); out.set(ch, 33); out.set(u8.subarray(33), 33 + ch.length); return out;
+}
+function pngText(u8, key) {
+  if (u8.length < 45 || u8[0] !== 0x89 || u8[1] !== 0x50 || u8[2] !== 0x4E || u8[3] !== 0x47) return null;
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  for (let p = 8; p + 12 <= u8.length;) {
+    const len = dv.getUint32(p), type = String.fromCharCode(u8[p + 4], u8[p + 5], u8[p + 6], u8[p + 7]);
+    if (type === "IEND" || p + 12 + len > u8.length) break;
+    if (type === "tEXt") { const d = u8.subarray(p + 8, p + 8 + len), z = d.indexOf(0); if (z > 0 && utf8d.decode(d.subarray(0, z)) === key) return utf8d.decode(d.subarray(z + 1)); }
+    p += 12 + len;
+  }
+  return null;
+}
+
+/* ---------- OCR (loaded only when an image needs reading) ---------- */
+let ocrWorker = null;
+function loadScript(src) { return new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("Could not load " + src)); document.head.appendChild(s); }); }
+async function getOCR(onProgress) {
+  if (ocrWorker) return ocrWorker;
+  const base = new URL("ocr/", location.href).href;
+  if (!window.Tesseract) await loadScript(base + "tesseract.min.js");
+  ocrWorker = await Tesseract.createWorker("eng", 1, { workerPath: base + "worker.min.js", corePath: base.replace(/\/$/, ""), langPath: base.replace(/\/$/, ""), gzip: true,
+    logger: m => { if (onProgress && m && m.status) onProgress(m); } });
+  await ocrWorker.setParameters({ tessedit_char_whitelist: A16 + " ", tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
+  return ocrWorker;
+}
+async function imageCanvas(file) {          // decode, straighten out size and polarity for the reader
+  const url = URL.createObjectURL(file);
+  const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error("Could not open " + file.name)); i.src = url; });
+  let k = Math.min(3, Math.max(1, 1600 / img.naturalWidth));
+  k = Math.min(k, Math.sqrt(12e6 / (img.naturalWidth * img.naturalHeight)));       // stay inside phone canvas limits
+  const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+  const g = c.getContext("2d", { willReadFrequently: true }); g.imageSmoothingQuality = "high"; g.drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+  const px = g.getImageData(0, 0, c.width, c.height), d = px.data; let sum = 0;
+  for (let i = 0; i < d.length; i += 4) { const y = (d[i] * 3 + d[i + 1] * 6 + d[i + 2]) / 10; d[i] = d[i + 1] = d[i + 2] = y; sum += y; }
+  if (sum / (d.length / 4) < 110) for (let i = 0; i < d.length; i += 4) d[i] = d[i + 1] = d[i + 2] = 255 - d[i];      // light text on dark
+  g.putImageData(px, 0, 0); return c;
+}
+async function restoreFromImages(files) {
+  say("Opening " + files.length + " image" + (files.length > 1 ? "s" : "") + "…");
+  try {
+    let exact = 0;
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i], inside = pngText(new Uint8Array(await f.arrayBuffer()), "gym-save");
+      if (inside) { RESTORE.push(rawLines(inside)); exact++; continue; }
+      const label = "Reading image " + (i + 1) + " of " + files.length;
+      const w = await getOCR(m => say(label + " — " + esc(m.status) + (m.progress != null ? " " + Math.round(m.progress * 100) + "%" : "")));
+      say(label + "…");
+      const { data } = await w.recognize(await imageCanvas(f));
+      RESTORE.push(rawLines(data.text));
+    }
+    const ok = await tryRestore(RESTORE, exact === files.length ? "save image" : "image");
+    if (!ok && !$("#load-status").textContent) say("Nothing was restored.");
+  } catch (e) { say("Could not read the image: " + esc(e.message || e), true); }
+}
+
+/* ---------- JSON file ---------- */
+function exportJSON() {
+  const file = new File([JSON.stringify({ workouts: S.workouts, draft: S.draft, theme: S.theme }, null, 1)], "gym-" + new Date().toISOString().slice(0, 10) + ".json", { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+  markBackup(); toast("Exported " + S.workouts.length + " workouts");
+}
+async function importJSON(file) {
+  try {
+    const o = JSON.parse(await file.text());
+    if (!o || typeof o !== "object" || !Array.isArray(o.workouts)) throw new Error("no workouts list in it");
+    applyRestore({ workouts: o.workouts, draft: o.draft || null, theme: o.theme || S.theme }, "file " + file.name);
+  } catch (e) { toast("That file is not a tracker export: " + e.message, 5000); }
+}
+
+applyTheme(); render();
+</script>
+</body>
+</html>
