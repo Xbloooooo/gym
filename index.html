@@ -205,7 +205,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-1";
+const VERSION = "2026.11.17-2";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -222,17 +222,29 @@ const LANES = [
   { key: "daypass", label: "Day-pass", venue: "Unity",       prefix: "unity_" }
 ];
 
-/* STARTER CARDS. Exercise names are placeholders and every load is unset —
+/* STARTER CARDS, except where a card is marked real. Starter exercise names are placeholders with loads unset —
    replace with the real cards. Warm-ups are first and never optional.
    Rests: main row/press 120 · assisted pull-up 150 · face pull / rear delt 90
    · arms 75 · easy finisher 60. */
 const ROUTINES = [
-  { id: "pull", name: "Pull", blurb: "Starter card — loads not set", exercises: [
-    { name: "Band pull-apart (warm-up)", sets: 2, repTarget: "15", rest: 60, log: "bodyweight" },
-    { name: "One-arm dumbbell row", sets: 3, repTarget: "8-12", rest: 120, log: "db" },
-    { name: "Pull-up", sets: 3, repTarget: "max", rest: 150, log: "bodyweight" },
-    { name: "Rear delt fly", sets: 3, repTarget: "12-15", rest: 90, log: "db" },
-    { name: "Dumbbell curl", sets: 3, repTarget: "10-12", rest: 75, log: "db" }
+  // Real card: Hevy routine "Comeback Pull" (hevy.com/routine/Sw3uOnimAp7), copied 17 Nov. No warm-up row in the source.
+  { id: "pull", name: "Comeback Pull", blurb: "Row 85 · assist 100 · face pull 25", exercises: [
+    { name: "Seated cable row — V grip", sets: 3, repTarget: "10", rest: 120, target: "85", log: "cable", defaultWeight: 85, defaultReps: "10",
+      note: "All sets top of range clean → bump next time." },
+    { name: "Assisted pull-up", sets: 3, repTarget: "5", rest: 150, target: "assist 100", log: "assist", defaultWeight: 100, defaultReps: "5",
+      note: "Chase a clean 3rd set. Ugly → more assist." },
+    { name: "Face pull", sets: 3, repTarget: "20", rest: 90, target: "25", log: "cable", defaultWeight: 25, defaultReps: "20",
+      cue: "Full finish, no shrug-cheat." },
+    { name: "Single-arm cable reverse fly", sets: 3, repTarget: "10", rest: 90, target: "12.5–15", log: "cable", defaultReps: "10",
+      note: "Slight-down OK." },
+    { name: "Cable bicep curl", sets: 3, repTarget: "15", rest: 75, target: "35–40, feel it out", log: "cable", defaultReps: "15",
+      note: "No fly handles." },
+    { name: "Seated incline dumbbell curl", sets: 2, repTarget: "6-12", rest: 75, target: "20–25 per hand", log: "db",
+      note: "Both DBs · 20–25, not 40." },
+    { name: "EZ bar biceps curl", sets: 3, repTarget: "10", rest: 45, target: "plates 2×10 + 2×2.5", log: "bar", defaultReps: "10", optional: true,
+      cue: "Strict.", note: "Plate math: 2×10, 2×2.5." },
+    { name: "Concentration curl", sets: 2, repTarget: "6", log: "db", defaultReps: "6", optional: true,
+      cue: "Slow negative.", note: "Assisted lift." }
   ]},
   { id: "push", name: "Push", blurb: "Starter card — loads not set", exercises: [
     { name: "Push-up (warm-up)", sets: 2, repTarget: "10", rest: 60, log: "bodyweight" },
