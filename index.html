@@ -177,6 +177,7 @@ h1,h2,h3,p{margin:0}
 .sec .fine{margin-bottom:12px}
 .code{width:100%;height:132px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font:400 12px/1.6 var(--mono);letter-spacing:.02em;resize:vertical;white-space:pre;overflow:auto}
 #load-text{font-size:16px;line-height:1.45}
+.rcode{margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font:400 calc((min(100vw,540px) - 64px) / 31.9)/1.75 var(--mono);white-space:pre;overflow:hidden;-webkit-user-select:text;user-select:text}
 .code::placeholder{font-family:var(--body);font-size:15px;letter-spacing:0;color:var(--faint);white-space:normal}
 .shots{display:grid;gap:12px;margin-top:12px}
 .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
@@ -205,7 +206,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-5";
+const VERSION = "2026.11.17-6";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -619,14 +620,23 @@ function viewHistory() {
   h += '<div class="sec"><a class="btn quiet" href="#/backup" style="text-decoration:none">Backup &amp; restore</a></div></div>';
   app.innerHTML = h;
 }
+let WCODE = null;         // save code of the workout on screen
 function viewWorkout(i) {
   const w = S.workouts[i];
   if (!w) return go("#/history");
   const m = minutes(w);
   app.innerHTML = '<div class="view"><div class="bar"><button class="back" data-act="history">' + ICON.back + 'History</button><h1>' + esc(w.name || "Workout") + '</h1><span class="side"></span></div>' +
     '<p class="fine" style="margin-top:16px">' + esc(day(w.startedAt)) + (m ? " · " + m + " min" : "") + " · " + doneSets(w) + " sets</p>" +
-    '<pre class="sum">' + esc(summary(w)) + '</pre><div class="stack"><button class="btn ink" data-act="copy-sum" data-i="' + i + '">Copy summary</button>' +
-    '<button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
+    '<pre class="sum">' + esc(summary(w)) + '</pre><div class="stack"><button class="btn ink" data-act="copy-sum" data-i="' + i + '">Copy summary</button></div>' +
+    '<section class="sec"><h2>Save code</h2><p class="fine">This one workout as a code. Keep it like a receipt: any number of codes can be pasted in together later and they merge.</p>' +
+    '<pre class="rcode" id="wcode" aria-label="Save code for this workout">building…</pre>' +
+    '<div class="stack" style="margin-top:10px"><button class="btn quiet" data-act="copy-code" disabled>Copy save code</button></div></section>' +
+    '<div class="sec"><button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
+  WCODE = null;
+  encodeSave({ theme: "default", workouts: [w], draft: null }).then(sv => {
+    const ta = $("#wcode"); if (!ta) return;
+    WCODE = sv; ta.textContent = sv.text; $('[data-act="copy-code"]').disabled = false;
+  }).catch(e => { const ta = $("#wcode"); if (ta) ta.textContent = "Could not build the code: " + e.message; });
 }
 
 /* ---------- backup ---------- */
@@ -636,18 +646,18 @@ function viewBackup() {
   RESTORE = [];
   const n = S.workouts.length;
   app.innerHTML = '<div class="view"><div class="bar"><button class="back" data-act="home">' + ICON.back + 'Home</button><h1>Backup</h1><span class="side"></span></div>' +
-    '<p class="fine" style="margin-top:16px">Logs live only in this browser on this phone. <b id="persist"></b> A save string is the whole log — ' + n + " workout" + (n === 1 ? "" : "s") + (S.draft ? " and the unfinished session" : "") + " — as text you can keep anywhere.</p>" +
+    '<p class="fine" style="margin-top:16px">Logs live only in this browser on this phone. <b id="persist"></b> A save code is workouts as text you can keep anywhere. Codes merge: paste in one or many and anything already here is skipped.</p>' +
 
-    '<section class="sec"><h2>Save</h2><textarea class="code" id="save-text" readonly aria-label="Save string">building…</textarea>' +
-    '<p class="fine" id="save-stats" style="margin-top:8px"></p><div class="stack"><button class="btn ink" data-act="copy-save" disabled>Copy save string</button>' +
+    '<section class="sec"><h2>Save everything</h2><p class="fine">One code for all of it — ' + n + " workout" + (n === 1 ? "" : "s") + (S.draft ? " and the unfinished session" : "") + '. Each workout also has its own code on its History page.</p><textarea class="code" id="save-text" readonly aria-label="Save code">building…</textarea>' +
+    '<p class="fine" id="save-stats" style="margin-top:8px"></p><div class="stack"><button class="btn ink" data-act="copy-save" disabled>Copy save code</button>' +
     '<button class="btn quiet" data-act="save-image" disabled>Make save image</button></div><div class="shots" id="shots"></div></section>' +
 
-    '<section class="sec"><h2>Restore</h2><p class="fine">Paste a save string, or pick a save image or a screenshot of one. Restoring replaces what is on this phone, after you confirm.</p>' +
-    '<textarea class="code" id="load-text" placeholder="Paste a save string here" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>' +
-    '<div class="stack" style="margin-top:10px"><button class="btn ink" data-act="restore-text">Restore from text</button>' +
-    '<label class="btn quiet" tabindex="0">Read from image<input type="file" id="img-in" accept="image/*" multiple></label></div><div class="status" id="load-status"></div></section>' +
+    '<section class="sec"><h2>Add from codes</h2><p class="fine">Paste one code or a whole pile of them, one after another, in any order. Or pick save images or screenshots. New workouts are added to what is on this phone; nothing here is removed.</p>' +
+    '<textarea class="code" id="load-text" placeholder="Paste save codes here" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>' +
+    '<div class="stack" style="margin-top:10px"><button class="btn ink" data-act="restore-text">Add from text</button>' +
+    '<label class="btn quiet" tabindex="0">Read from images<input type="file" id="img-in" accept="image/*" multiple></label></div><div class="status" id="load-status"></div></section>' +
 
-    '<section class="sec"><h2>JSON file</h2><p class="fine">The raw log, for moving in from the old tracker or keeping a file copy.</p>' +
+    '<section class="sec"><h2>JSON file</h2><p class="fine">The raw log as a file, for moving in from the old tracker. Importing a file replaces what is on this phone.</p>' +
     '<div class="row2"><button class="btn quiet" data-act="export">Export</button><label class="btn quiet" tabindex="0">Import<input type="file" id="json-in" accept="application/json,.json"></label></div></section></div>';
   if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { const el = $("#persist"); if (el) el.textContent = p ? "The browser has marked this storage as persistent." : "The browser may clear it without asking."; }).catch(() => {});
   SAVE = null;
@@ -657,7 +667,7 @@ function viewBackup() {
     const pages = Math.ceil(sv.lines.length / PAGE);
     $("#save-stats").textContent = sv.chars.toLocaleString() + " letters · " + sv.lines.length + " lines · " + pages + " image" + (pages > 1 ? "s" : "");
     app.querySelectorAll('[data-act="copy-save"],[data-act="save-image"]').forEach(b => b.disabled = false);
-  }).catch(e => { const ta = $("#save-text"); if (ta) ta.value = "Could not build the save string: " + e.message; });
+  }).catch(e => { const ta = $("#save-text"); if (ta) ta.value = "Could not build the save code: " + e.message; });
 }
 function markBackup() { S.backup = { at: new Date().toISOString(), n: S.workouts.length }; save(); }
 
@@ -680,7 +690,8 @@ document.addEventListener("click", ev => {
   if (act === "timer-add") { if (T.state === "run") { T.endAt += 30000; T.total += 30; tickRest(); } return; }
   if (act === "copy-sum") { const w = S.workouts[+b.dataset.i]; if (w) copyText(summary(w)).then(ok => { if (ok) toast("Summary copied"); else { selectNode($(".sum")); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
   if (act === "delete") { const i = +b.dataset.i, w = S.workouts[i]; if (w && confirm("Delete " + (w.name || "this workout") + " from " + day(w.startedAt) + "? This cannot be undone.")) { S.workouts.splice(i, 1); save(); go("#/history"); toast("Deleted"); } return; }
-  if (act === "copy-save") { if (SAVE) copyText(SAVE.text).then(ok => { if (ok) { markBackup(); toast("Save string copied · " + SAVE.chars.toLocaleString() + " letters"); } else { const ta = $("#save-text"); ta.focus(); ta.select(); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
+  if (act === "copy-code") { if (WCODE) copyText(WCODE.text).then(ok => { if (ok) toast("Save code copied · " + WCODE.chars.toLocaleString() + " letters"); else { selectNode($("#wcode")); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
+  if (act === "copy-save") { if (SAVE) copyText(SAVE.text).then(ok => { if (ok) { markBackup(); toast("Save code copied · " + SAVE.chars.toLocaleString() + " letters"); } else { const ta = $("#save-text"); ta.focus(); ta.select(); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
   if (act === "save-image") return makeSaveImages();
   if (act === "share-img") return shareImage(+b.dataset.i);
   if (act === "restore-text") return restoreFromText();
@@ -718,16 +729,21 @@ function applyTheme() {
 }
 
 /* =====================================================================
-   Save string
-   16 letters that OCR does not confuse, 2 letters per byte. Lines carry
-   40 payload letters + 4 check letters (CRC of line number + payload), so
-   a bad line is caught, located and often repaired. A CRC-32 covers the lot.
+   Save codes
+   16 letters that OCR does not confuse, 2 letters per byte. A code is
+   lines of 40 payload letters + 4 check letters. The check is a CRC of
+   (code id, line number, payload), so every line knows which code it
+   belongs to and where: lines from many codes can arrive mixed, out of
+   order or twice and still be sorted, a bad line is located and often
+   repaired. A CRC-32 covers each code. Codes merge by workout.
    ===================================================================== */
-const A16 = "ACDEHKLNPRSTUXYZ", LINE = 40, CHK = 4, PAGE = 180;
+const A16 = "ACDEHKLNPRSTUXYZ", LINE = 40, CHK = 4, FULL = LINE + CHK, PAGE = 180;
 const utf8 = new TextEncoder(), utf8d = new TextDecoder();
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
 function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
-function lineCheck(idx, payload) { const v = crc32(utf8.encode(idx + ":" + payload)) & 0xFFFF; return A16[v >>> 12] + A16[v >>> 8 & 15] + A16[v >>> 4 & 15] + A16[v & 15]; }
+function chk16(str) { const v = crc32(utf8.encode(str)) & 0xFFFF; return A16[v >>> 12] + A16[v >>> 8 & 15] + A16[v >>> 4 & 15] + A16[v & 15]; }
+// Format 2 ties each line to its code (id = the body CRC). Format 1 (first day only) had no id; still readable.
+const lineCheck = (ver, id, idx, payload) => chk16(ver === 1 ? idx + ":" + payload : id + ":" + idx + ":" + payload);
 function toLetters(u8) { let s = ""; for (let i = 0; i < u8.length; i++) s += A16[u8[i] >> 4] + A16[u8[i] & 15]; return s; }
 function fromLetters(s) { const u = new Uint8Array(s.length >> 1); for (let i = 0; i < u.length; i++) u[i] = A16.indexOf(s[2 * i]) << 4 | A16.indexOf(s[2 * i + 1]); return u; }
 const showLine = l => l.slice(0, -CHK).match(/.{1,5}/g).join(" ") + "  " + l.slice(-CHK);
@@ -750,108 +766,158 @@ function unpackSession(a) {
   if (a[3]) s.finishedAt = iso(a[3]);
   return s;
 }
+// A code for any set of workouts: the whole log, or a single workout kept like a receipt.
 async function encodeSave(st) {
   let body = utf8.encode(JSON.stringify([1, st.theme === "stealth" ? 1 : 0, st.workouts.map(packSession), st.draft ? packSession(st.draft) : 0])), flags = 0;
   if (window.CompressionStream) { try { const z = await pipe(body, new CompressionStream("deflate-raw")); if (z.length < body.length) { body = z; flags = 1; } } catch (e) {} }
   const all = new Uint8Array(9 + body.length), c = crc32(body), n = body.length;
-  all.set([1, flags, c >>> 24, c >>> 16 & 255, c >>> 8 & 255, c & 255, n >>> 16 & 255, n >>> 8 & 255, n & 255]); all.set(body, 9);
+  all.set([2, flags, c >>> 24, c >>> 16 & 255, c >>> 8 & 255, c & 255, n >>> 16 & 255, n >>> 8 & 255, n & 255]); all.set(body, 9);
   const letters = toLetters(all), lines = [];
-  for (let i = 0; i < letters.length; i += LINE) { const p = letters.slice(i, i + LINE); lines.push(p + lineCheck(lines.length, p)); }
+  for (let i = 0; i < letters.length; i += LINE) { const p = letters.slice(i, i + LINE); lines.push(p + lineCheck(2, c, lines.length, p)); }
   return { lines, chars: letters.length + lines.length * CHK, text: lines.map(showLine).join("\n") };
 }
-function saveShape(payload0) {             // read total size from the header in line 0
-  if (payload0.length < 18) return null;
-  const b = fromLetters(payload0.slice(0, 18)); if (b[0] !== 1) return null;
-  const chars = (9 + (b[6] << 16 | b[7] << 8 | b[8])) * 2, total = Math.ceil(chars / LINE);
-  return { total, lastLen: chars - (total - 1) * LINE + CHK };
+// Is this raw line the first line of a code? It carries the header: format, flags, body CRC, body length.
+function readHead(raw) {
+  if (raw.length < 18 + CHK) return null;
+  const b = fromLetters(raw.slice(0, 18)), ver = b[0];
+  if (ver !== 1 && ver !== 2) return null;
+  const id = (b[2] << 24 | b[3] << 16 | b[4] << 8 | b[5]) >>> 0, chars = (9 + (b[6] << 16 | b[7] << 8 | b[8])) * 2, total = Math.ceil(chars / LINE);
+  const lastLen = chars - (total - 1) * LINE + CHK;
+  if (raw.length !== (total === 1 ? lastLen : FULL) || lineCheck(ver, id, 0, raw.slice(0, -CHK)) !== raw.slice(-CHK)) return null;
+  return { ver, id, total, lastLen, key: ver + ":" + id + ":" + chars, line0: raw, got: new Map([[0, raw]]), bad: new Map(), repaired: 0 };
 }
-const verify = (idx, raw) => raw.length > CHK && lineCheck(idx, raw.slice(0, -CHK)) === raw.slice(-CHK);
-function repair(idx, raw, want) {          // one wrong, missing or extra letter — accepted only if exactly one fix checks out
-  const fixes = new Set(), n = raw.length, tryIt = c => { if (verify(idx, c)) fixes.add(c); };
-  if (n === want) for (let i = 0; i < n; i++) for (const ch of A16) { if (ch !== raw[i]) tryIt(raw.slice(0, i) + ch + raw.slice(i + 1)); }
-  else if (n === want - 1) for (let i = 0; i <= n; i++) for (const ch of A16) tryIt(raw.slice(0, i) + ch + raw.slice(i));
-  else if (n === want + 1) for (let i = 0; i < n; i++) tryIt(raw.slice(0, i) + raw.slice(i + 1));
-  return fixes.size === 1 ? [...fixes][0] : null;
+const want = (c, i) => i === c.total - 1 ? c.lastLen : FULL;
+const lineOk = (c, i, raw) => raw.length === want(c, i) && lineCheck(c.ver, c.id, i, raw.slice(0, -CHK)) === raw.slice(-CHK);
+function fixes(raw, len, ok) {             // every one-letter change (wrong, missing or extra letter) that makes the line check out
+  const out = new Set(), n = raw.length, t = c => { if (ok(c)) out.add(c); };
+  if (n === len) for (let i = 0; i < n; i++) for (const ch of A16) { if (ch !== raw[i]) t(raw.slice(0, i) + ch + raw.slice(i + 1)); }
+  else if (n === len - 1) for (let i = 0; i <= n; i++) for (const ch of A16) t(raw.slice(0, i) + ch + raw.slice(i));
+  else if (n === len + 1) for (let i = 0; i < n; i++) t(raw.slice(0, i) + raw.slice(i + 1));
+  return out;
 }
-// Text (pasted or OCR'd) -> raw lines of letters only.
+// Text (pasted or OCR'd) -> raw lines of letters. Lines with digits in them are prose (a workout summary, say) and are dropped.
 function rawLines(text) {
-  const clean = s => s.toUpperCase().replace(/[^A-Z]/g, "");
-  let lines = String(text).split(/\r?\n/).map(clean).filter(l => l.length >= 6);
-  if (!lines.some(l => l.length === LINE + CHK)) {      // pasted as one run: rebuild the lines
+  let lines = String(text).toUpperCase().split(/\r?\n/).map(l => l.replace(/[^A-Z0-9]/g, "")).filter(l => l.length >= 6 && !/[0-9]/.test(l));
+  if (!lines.some(l => l.length === FULL)) {      // pasted as one run: cut it back into lines, code after code
     const all = lines.join(""); lines = [];
-    for (let i = 0; i < all.length; i += LINE + CHK) lines.push(all.slice(i, i + LINE + CHK));
+    for (let p = 0; p < all.length;) {
+      const h = readHead(all.slice(p, p + FULL));
+      if (!h) { lines.push(all.slice(p, p + FULL)); p += FULL; continue; }
+      for (let i = 0; i < h.total; i++) { lines.push(all.slice(p, p + want(h, i))); p += want(h, i); }
+    }
   }
   return lines;
 }
-// Blocks of raw lines (one block per image / paste) -> the save, or what is missing.
+// Blocks of raw lines (one block per paste or image) -> every code found in them, each with its lines and what is missing.
 function assemble(blocks) {
-  const FULL = LINE + CHK, flat = blocks.flat();
-  let shape = null, first = flat.find(l => l.length === FULL && verify(0, l));
-  if (!first) for (const l of flat) { if (Math.abs(l.length - FULL) <= 1) { const f = repair(0, l, FULL); if (f && saveShape(f)) { first = f; break; } } }
-  if (first) shape = saveShape(first);
-  if (!shape) {      // a very short save is a single short line
-    first = flat.find(l => l.length > 18 + CHK && verify(0, l) && saveShape(l) && saveShape(l).total === 1 && saveShape(l).lastLen === l.length);
-    if (first) shape = saveShape(first);
-  }
-  if (!shape) return { error: "The first line of the save was not found. It has to be in the text or image." };
-  const { total, lastLen } = shape, want = i => i === total - 1 ? lastLen : FULL;
-  const got = new Map(), bad = new Map(); let repaired = 0;
-  for (const block of blocks) {
-    let exp = null;
-    for (const raw of block) {
-      if (exp != null && exp < total && raw.length === want(exp) && verify(exp, raw)) { got.set(exp, raw); exp++; continue; }
-      let hit = -1;
-      for (let i = 0; i < total; i++) if (raw.length === want(i) && verify(i, raw) && (hit < 0 || Math.abs(i - (exp || 0)) < Math.abs(hit - (exp || 0)))) hit = i;
-      if (hit >= 0) { got.set(hit, raw); exp = hit + 1; continue; }
-      if (exp != null && exp < total && Math.abs(raw.length - want(exp)) <= 1) {
-        const f = repair(exp, raw, want(exp));
-        if (f) { got.set(exp, f); repaired++; } else if (!bad.has(exp)) bad.set(exp, raw);
-        exp++;
+  const codes = new Map(), mended = new Map();
+  for (const b of blocks) for (const raw of b) { const h = readHead(raw); if (h && !codes.has(h.key)) codes.set(h.key, h); }
+  const place = () => {
+    const stray = [];
+    for (const c of codes.values()) { c.got = new Map([[0, c.line0]]); c.bad = new Map(); c.repaired = c.mendedHead ? 1 : 0; }
+    for (const block of blocks) {
+      let cur = null, exp = 0;
+      for (const r of block) {
+        const raw = mended.get(r) || r, h = readHead(raw);
+        if (h) { cur = codes.get(h.key); exp = 1; continue; }
+        if (cur && exp < cur.total && lineOk(cur, exp, raw)) { cur.got.set(exp, raw); exp++; continue; }
+        let hit = null, hi = -1;
+        for (const c of codes.values()) for (let i = 1; i < c.total; i++) {
+          if (!lineOk(c, i, raw)) continue;
+          if (!hit || (c === cur && hit !== cur) || (c === hit && c === cur && Math.abs(i - exp) < Math.abs(hi - exp))) { hit = c; hi = i; }
+        }
+        if (hit) { hit.got.set(hi, raw); cur = hit; exp = hi + 1; continue; }
+        if (cur && exp < cur.total && Math.abs(raw.length - want(cur, exp)) <= 1) {
+          const c = cur, i = exp, f = fixes(raw, want(c, i), x => lineOk(c, i, x));
+          if (f.size === 1) { c.got.set(i, [...f][0]); c.repaired++; exp++; continue; }
+          if (!c.bad.has(i)) c.bad.set(i, raw);
+          exp++;
+        }
+        stray.push(r);
       }
     }
+    return stray;
+  };
+  let stray = place(), found = false;
+  for (const r of stray) {                 // a first line with one bad letter: mend it, then its code can be read
+    if (Math.abs(r.length - FULL) > 1) continue;
+    const f = fixes(r, FULL, x => !!readHead(x));
+    if (f.size === 1) { const h = readHead([...f][0]); if (!codes.has(h.key)) { h.mendedHead = true; codes.set(h.key, h); mended.set(r, h.line0); found = true; } }
   }
-  if (!got.has(0)) got.set(0, first);
-  const missing = []; for (let i = 0; i < total; i++) if (!got.has(i)) missing.push(i);
-  return { total, got, bad, repaired, missing };
+  if (found) stray = place();
+  const list = [...codes.values()];
+  for (const c of list) { c.missing = []; for (let i = 0; i < c.total; i++) if (!c.got.has(i)) c.missing.push(i); }
+  return list;
 }
-async function decodeSave(asm) {
-  let letters = ""; for (let i = 0; i < asm.total; i++) letters += asm.got.get(i).slice(0, -CHK);
+async function decodeSave(c) {
+  let letters = ""; for (let i = 0; i < c.total; i++) letters += c.got.get(i).slice(0, -CHK);
   const all = fromLetters(letters), n = all[6] << 16 | all[7] << 8 | all[8]; let body = all.subarray(9, 9 + n);
-  const c = (all[2] << 24 | all[3] << 16 | all[4] << 8 | all[5]) >>> 0;
-  if (body.length !== n || crc32(body) !== c) throw new Error("The save does not add up (checksum mismatch). One line is wrong.");
-  if (all[1] & 1) { if (!window.DecompressionStream) throw new Error("This browser is too old to unpack the save."); body = await pipe(body, new DecompressionStream("deflate-raw")); }
+  if (body.length !== n || crc32(body) !== c.id) throw new Error("it does not add up (checksum mismatch), one line is wrong");
+  if (all[1] & 1) { if (!window.DecompressionStream) throw new Error("this browser is too old to unpack it"); body = await pipe(body, new DecompressionStream("deflate-raw")); }
   const p = JSON.parse(utf8d.decode(body));
-  if (!Array.isArray(p) || p[0] !== 1) throw new Error("Unknown save version.");
+  if (!Array.isArray(p) || p[0] !== 1) throw new Error("unknown contents");
   return { theme: p[1] ? "stealth" : "default", workouts: p[2].map(unpackSession), draft: p[3] ? unpackSession(p[3]) : null };
 }
-function applyRestore(st, source) {
+
+/* ---------- merging ---------- */
+const wkey = w => (w.routineId || "") + "|" + secs(w.startedAt);        // one workout = one card started at one second
+const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+function planMerge(states) {
+  const have = new Set(S.workouts.map(wkey)), add = []; let dupes = 0, draft = null;
+  for (const st of states) for (const w of st.workouts) { const k = wkey(w); if (have.has(k)) dupes++; else { have.add(k); add.push(w); } }
+  if (!S.draft) for (const st of states) if (st.draft && !have.has(wkey(st.draft)) && (!draft || secs(st.draft.startedAt) > secs(draft.startedAt))) draft = st.draft;
+  return { add, dupes, draft };
+}
+function applyMerge(plan) {
+  S.workouts = S.workouts.concat(plan.add).sort((a, b) => secs(a.startedAt) - secs(b.startedAt));
+  if (plan.draft) S.draft = plan.draft;
+  S.backup = { at: S.backup && S.backup.at || new Date().toISOString(), n: (S.backup && S.backup.n || 0) + plan.add.length };   // these came out of a code you hold
+  save();
+}
+function applyReplace(st, source) {        // JSON import only: the file becomes the log
   st = normState(st);
-  const msg = "Replace what is on this phone (" + S.workouts.length + " workouts" + (S.draft ? ", 1 unfinished" : "") + ") with the " + source + " (" + st.workouts.length + " workouts" + (st.draft ? ", 1 unfinished" : "") + ")?";
+  const msg = "Replace what is on this phone (" + plural(S.workouts.length, "workout") + (S.draft ? ", 1 unfinished" : "") + ") with the " + source + " (" + plural(st.workouts.length, "workout") + (st.draft ? ", 1 unfinished" : "") + ")?";
   if (!confirm(msg)) return false;
   st.backup = { at: new Date().toISOString(), n: st.workouts.length };
-  S = st; save(); applyTheme(); RESTORE = []; go("#/"); toast("Restored " + st.workouts.length + " workout" + (st.workouts.length === 1 ? "" : "s"));
+  S = st; save(); applyTheme(); RESTORE = []; go("#/"); toast("Replaced with " + plural(st.workouts.length, "workout"));
   return true;
 }
 function say(html, bad) { const el = $("#load-status"); if (el) { el.innerHTML = html; el.classList.toggle("bad", !!bad); } }
-async function tryRestore(blocks, source) {
-  const asm = assemble(blocks);
-  if (asm.error) { say(esc(asm.error), true); return false; }
-  if (asm.missing.length) {
-    const box = $("#load-text");
-    if (box) { const out = []; for (let i = 0; i < asm.total; i++) out.push(asm.got.has(i) ? showLine(asm.got.get(i)) : asm.bad.has(i) ? asm.bad.get(i) : ""); box.value = out.join("\n"); }
-    const list = asm.missing.slice(0, 12).map(i => i + 1).join(", ") + (asm.missing.length > 12 ? "…" : "");
-    say("Read <b>" + (asm.total - asm.missing.length) + " of " + asm.total + "</b> lines" + (asm.repaired ? " (" + asm.repaired + " repaired)" : "") + ". Still missing or unreadable: line " + esc(list) +
-      ". Add another image that shows those lines, or fix them in the box above and press Restore from text.", true);
-    return false;
+// Read every code in the blocks, merge the readable ones into the log, say plainly what could not be read.
+async function addFromCodes(blocks) {
+  const codes = assemble(blocks);
+  if (!codes.length) { say("No save code found in that. A code is recognised by its first line, so the top of it has to be included.", true); return false; }
+  const good = [], broken = [];
+  for (const c of codes) {
+    if (c.missing.length) { broken.push(c); continue; }
+    try { good.push(await decodeSave(c)); } catch (e) { c.err = e.message; broken.push(c); }
   }
-  let st; try { st = await decodeSave(asm); } catch (e) { say(esc(e.message), true); return false; }
-  say("Read all " + asm.total + " lines" + (asm.repaired ? " (" + asm.repaired + " repaired)" : "") + ". " + st.workouts.length + " workouts in the save.");
-  return applyRestore(st, source);
+  const repaired = codes.reduce((n, c) => n + c.repaired, 0);
+  let trouble = "";
+  if (broken.length) {
+    trouble = broken.slice(0, 4).map(c => c.err ? "One code was not used: " + esc(c.err) + "." :
+      "One code is incomplete: " + (c.total - c.missing.length) + " of " + c.total + " lines read, missing line " + c.missing.slice(0, 10).map(i => i + 1).join(", ") + (c.missing.length > 10 ? "…" : "") + ".").join(" ") +
+      (broken.length > 4 ? " And " + (broken.length - 4) + " more." : "") + " Add an image or paste that shows the missing lines and it will be picked up.";
+    const box = $("#load-text");
+    if (box && codes.length === 1 && !broken[0].err) { const c = broken[0], out = []; for (let i = 0; i < c.total; i++) out.push(c.got.has(i) ? showLine(c.got.get(i)) : c.bad.has(i) ? c.bad.get(i) : ""); box.value = out.join("\n"); }
+  }
+  if (!good.length) { say(trouble, true); return false; }
+  const plan = planMerge(good), inCodes = plan.add.length + plan.dupes;
+  const read = "Read " + plural(good.length, "code") + " holding " + plural(inCodes, "workout") + (repaired ? " (" + plural(repaired, "line") + " repaired)" : "") + ". ";
+  if (!plan.add.length && !plan.draft) { say(read + "Nothing new: " + (inCodes === 1 ? "it is" : "all of them are") + " already on this phone. " + trouble, !!broken.length); return false; }
+  const ask = "Add " + plural(plan.add.length, "workout") + " to the " + S.workouts.length + " on this phone?" + (plan.dupes ? " " + plural(plan.dupes, "duplicate") + " skipped." : "") +
+    (plan.draft ? " Also brings back the unfinished " + plan.draft.name + "." : "");
+  if (!confirm(ask)) { say(read + "Nothing was added. " + trouble, !!broken.length); return false; }
+  applyMerge(plan);
+  const done = "Added " + plural(plan.add.length, "workout") + (plan.dupes ? ", " + plural(plan.dupes, "duplicate") + " skipped" : "");
+  if (broken.length) { const keep = RESTORE; viewBackup(); RESTORE = keep; say(read + done + ". " + trouble, true); toast(done); }
+  else { RESTORE = []; go("#/"); toast(done); }
+  return true;
 }
 function restoreFromText() {
   const text = $("#load-text").value;
-  if (!text.trim()) return say("Paste a save string first.", true);
-  tryRestore([rawLines(text)], "pasted save");
+  if (!text.trim()) return say("Paste one or more save codes first.", true);
+  addFromCodes([rawLines(text)]);
 }
 
 /* ---------- save image ---------- */
@@ -877,7 +943,7 @@ async function makeSaveImages() {
     SHOTS.push(file);
     html += '<div class="shot"><img alt="Save image ' + (p + 1) + " of " + pages + '" src="' + URL.createObjectURL(file) + '"><button class="btn" data-act="share-img" data-i="' + p + '">Save / share image' + (pages > 1 ? " " + (p + 1) + " of " + pages : "") + "</button></div>";
   }
-  box.innerHTML = '<p class="fine">Keep the image itself where you can — a saved image restores exactly. A screenshot works too, read back by OCR.</p>' + html;
+  box.innerHTML = '<p class="fine">Keep the image itself where you can — the saved file reads back exactly. A screenshot works too, read by OCR.</p>' + html;
   markBackup();
 }
 async function shareImage(i) {
@@ -929,18 +995,17 @@ async function imageCanvas(file) {          // decode, straighten out size and p
 async function restoreFromImages(files) {
   say("Opening " + files.length + " image" + (files.length > 1 ? "s" : "") + "…");
   try {
-    let exact = 0;
+
     for (let i = 0; i < files.length; i++) {
       const f = files[i], inside = pngText(new Uint8Array(await f.arrayBuffer()), "gym-save");
-      if (inside) { RESTORE.push(rawLines(inside)); exact++; continue; }
+      if (inside) { RESTORE.push(rawLines(inside)); continue; }
       const label = "Reading image " + (i + 1) + " of " + files.length;
       const w = await getOCR(m => say(label + " — " + esc(m.status) + (m.progress != null ? " " + Math.round(m.progress * 100) + "%" : "")));
       say(label + "…");
       const { data } = await w.recognize(await imageCanvas(f));
       RESTORE.push(rawLines(data.text));
     }
-    const ok = await tryRestore(RESTORE, exact === files.length ? "save image" : "image");
-    if (!ok && !$("#load-status").textContent) say("Nothing was restored.");
+    await addFromCodes(RESTORE);
   } catch (e) { say("Could not read the image: " + esc(e.message || e), true); }
 }
 
@@ -954,7 +1019,7 @@ async function importJSON(file) {
   try {
     const o = JSON.parse(await file.text());
     if (!o || typeof o !== "object" || !Array.isArray(o.workouts)) throw new Error("no workouts list in it");
-    applyRestore({ workouts: o.workouts, draft: o.draft || null, theme: o.theme || S.theme }, "file " + file.name);
+    applyReplace({ workouts: o.workouts, draft: o.draft || null, theme: o.theme || S.theme }, "file " + file.name);
   } catch (e) { toast("That file is not a tracker export: " + e.message, 5000); }
 }
 
