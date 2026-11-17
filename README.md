@@ -37,6 +37,31 @@ Pages republishes in about a minute. Pages caches for 10 minutes; reload the pho
 
 Six cards so far: Pull and Push in each lane, all starting from the Hevy "Comeback Pull" / "Comeback Push" routines. They are separate objects; a session graded at one gym changes that gym's card only.
 
+## What the page fills in during a session
+
+The aim is that a set done as expected is one tap on its check. Everything below is a guess made for speed, written
+down so it is easy to find and change (the code is under "what the page fills in" in `index.html`).
+
+- **A session starts as a copy of last time on that card**: same weight and reps, set by set. History beats the
+  card's `defaultWeight` / `defaultReps`; those only fill a lift never logged on that card. So bumping a default in a
+  card no longer changes what the boxes show once the lift has history; the `target` text still shows.
+- **Loads never come from another card.** Work Pull does not start from Home Pull's numbers.
+- **A lift with no history and no `defaultWeight`** opens at the number its `target` text starts with
+  (`"12.5–15"` → 12.5). A target that starts with a word fills nothing.
+- **The set being worked on** is the first unchecked one, or the one whose box was tapped. It gets four buttons under
+  it: weight down/up by one plate, reps down/up by one.
+- **A plate** is 5; dumbbells up to 25 and cables under 20 (or sitting on a half step) move by 2.5. An exercise can
+  set its own with `step: 10`.
+- **Changing a set's weight**, by button or by typing, also changes the unchecked sets after it that had the same
+  weight. Reps do not carry.
+- **Tapping a box selects its contents**, so typing replaces rather than appends. Checking a set puts the keyboard away.
+- **Checking the last set of a lift** scrolls to the next lift with sets open.
+- **Check all** marks the rest of a lift's sets done as written and starts one rest. **+ Set** adds a set like the last.
+- **Move up**: when every set reached the top of the rep range last time at one weight, the lift offers the next
+  weight (less assist on assisted lifts) with reps at the bottom of the range. It is an offer; nothing changes unless
+  it is tapped.
+- Unchecked sets are never logged, so a prefilled set that was not done costs nothing.
+
 ## Where the log lives
 
 `localStorage["gym_tracker_v1"]` in that one browser, for the `xbloooooo.github.io` origin:
