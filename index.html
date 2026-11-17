@@ -177,7 +177,6 @@ h1,h2,h3,p{margin:0}
 .sec .fine{margin-bottom:12px}
 .code{width:100%;height:132px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font:400 12px/1.6 var(--mono);letter-spacing:.02em;resize:vertical;white-space:pre;overflow:auto}
 #load-text{font-size:16px;line-height:1.45}
-.rcode{margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font:400 calc((min(100vw,540px) - 64px) / 31.9)/1.75 var(--mono);white-space:pre;overflow:hidden;-webkit-user-select:text;user-select:text}
 .code::placeholder{font-family:var(--body);font-size:15px;letter-spacing:0;color:var(--faint);white-space:normal}
 .shots{display:grid;gap:12px;margin-top:12px}
 .shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
@@ -206,7 +205,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-6";
+const VERSION = "2026.11.17-7";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -620,47 +619,40 @@ function viewHistory() {
   h += '<div class="sec"><a class="btn quiet" href="#/backup" style="text-decoration:none">Backup &amp; restore</a></div></div>';
   app.innerHTML = h;
 }
-let WCODE = null;         // save code of the workout on screen
 function viewWorkout(i) {
   const w = S.workouts[i];
   if (!w) return go("#/history");
   const m = minutes(w);
   app.innerHTML = '<div class="view"><div class="bar"><button class="back" data-act="history">' + ICON.back + 'History</button><h1>' + esc(w.name || "Workout") + '</h1><span class="side"></span></div>' +
     '<p class="fine" style="margin-top:16px">' + esc(day(w.startedAt)) + (m ? " · " + m + " min" : "") + " · " + doneSets(w) + " sets</p>" +
-    '<pre class="sum">' + esc(summary(w)) + '</pre><div class="stack"><button class="btn ink" data-act="copy-sum" data-i="' + i + '">Copy summary</button></div>' +
-    '<section class="sec"><h2>Save code</h2><p class="fine">This one workout as a code. Keep it like a receipt: any number of codes can be pasted in together later and they merge.</p>' +
-    '<pre class="rcode" id="wcode" aria-label="Save code for this workout">building…</pre>' +
-    '<div class="stack" style="margin-top:10px"><button class="btn quiet" data-act="copy-code" disabled>Copy save code</button></div></section>' +
-    '<div class="sec"><button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
-  WCODE = null;
-  encodeSave({ theme: "default", workouts: [w], draft: null }).then(sv => {
-    const ta = $("#wcode"); if (!ta) return;
-    WCODE = sv; ta.textContent = sv.text; $('[data-act="copy-code"]').disabled = false;
-  }).catch(e => { const ta = $("#wcode"); if (ta) ta.textContent = "Could not build the code: " + e.message; });
+    '<pre class="sum">' + esc(summary(w)) + '</pre><div class="stack"><button class="btn ink" data-act="copy-sum" data-i="' + i + '">Copy summary</button>' +
+    '<button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
 }
 
 /* ---------- backup ---------- */
 let SAVE = null;          // { lines, text } for the current state, built when the view opens
 let RESTORE = [];         // blocks of raw lines read so far (pasted text or images)
+let NOTE = "";            // one-time line shown above the current code after codes were added
 function viewBackup() {
   RESTORE = [];
   const n = S.workouts.length;
   app.innerHTML = '<div class="view"><div class="bar"><button class="back" data-act="home">' + ICON.back + 'Home</button><h1>Backup</h1><span class="side"></span></div>' +
-    '<p class="fine" style="margin-top:16px">Logs live only in this browser on this phone. <b id="persist"></b> A save code is workouts as text you can keep anywhere. Codes merge: paste in one or many and anything already here is skipped.</p>' +
+    '<p class="fine" style="margin-top:16px">Logs live only in this browser on this phone. <b id="persist"></b> A save code is the history as text you can keep anywhere.</p>' +
 
-    '<section class="sec"><h2>Save everything</h2><p class="fine">One code for all of it — ' + n + " workout" + (n === 1 ? "" : "s") + (S.draft ? " and the unfinished session" : "") + '. Each workout also has its own code on its History page.</p><textarea class="code" id="save-text" readonly aria-label="Save code">building…</textarea>' +
+    '<section class="sec"><h2>Current code</h2>' + (NOTE ? '<div class="status" style="margin:0 0 12px">' + esc(NOTE) + "</div>" : "") +
+    '<p class="fine">Everything on this phone right now — ' + n + " workout" + (n === 1 ? "" : "s") + (S.draft ? " and the unfinished session" : "") + '. It is rebuilt whenever the history changes, so the latest copy replaces any older code.</p><textarea class="code" id="save-text" readonly aria-label="Save code">building…</textarea>' +
     '<p class="fine" id="save-stats" style="margin-top:8px"></p><div class="stack"><button class="btn ink" data-act="copy-save" disabled>Copy save code</button>' +
     '<button class="btn quiet" data-act="save-image" disabled>Make save image</button></div><div class="shots" id="shots"></div></section>' +
 
-    '<section class="sec"><h2>Add from codes</h2><p class="fine">Paste one code or a whole pile of them, one after another, in any order. Or pick save images or screenshots. New workouts are added to what is on this phone; nothing here is removed.</p>' +
+    '<section class="sec"><h2>Add codes</h2><p class="fine">Paste a code and add it, then the next one, or paste several at once. Or pick save images or screenshots. Each one adds its workouts to the history; what is already here is skipped and nothing is removed.</p>' +
     '<textarea class="code" id="load-text" placeholder="Paste save codes here" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>' +
-    '<div class="stack" style="margin-top:10px"><button class="btn ink" data-act="restore-text">Add from text</button>' +
+    '<div class="stack" style="margin-top:10px"><button class="btn ink" data-act="restore-text">Add this code</button>' +
     '<label class="btn quiet" tabindex="0">Read from images<input type="file" id="img-in" accept="image/*" multiple></label></div><div class="status" id="load-status"></div></section>' +
 
     '<section class="sec"><h2>JSON file</h2><p class="fine">The raw log as a file, for moving in from the old tracker. Importing a file replaces what is on this phone.</p>' +
     '<div class="row2"><button class="btn quiet" data-act="export">Export</button><label class="btn quiet" tabindex="0">Import<input type="file" id="json-in" accept="application/json,.json"></label></div></section></div>';
   if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { const el = $("#persist"); if (el) el.textContent = p ? "The browser has marked this storage as persistent." : "The browser may clear it without asking."; }).catch(() => {});
-  SAVE = null;
+  SAVE = null; NOTE = "";
   encodeSave(S).then(sv => {
     SAVE = sv; const ta = $("#save-text"); if (!ta) return;
     ta.value = sv.lines.map(showLine).join("\n");
@@ -690,7 +682,6 @@ document.addEventListener("click", ev => {
   if (act === "timer-add") { if (T.state === "run") { T.endAt += 30000; T.total += 30; tickRest(); } return; }
   if (act === "copy-sum") { const w = S.workouts[+b.dataset.i]; if (w) copyText(summary(w)).then(ok => { if (ok) toast("Summary copied"); else { selectNode($(".sum")); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
   if (act === "delete") { const i = +b.dataset.i, w = S.workouts[i]; if (w && confirm("Delete " + (w.name || "this workout") + " from " + day(w.startedAt) + "? This cannot be undone.")) { S.workouts.splice(i, 1); save(); go("#/history"); toast("Deleted"); } return; }
-  if (act === "copy-code") { if (WCODE) copyText(WCODE.text).then(ok => { if (ok) toast("Save code copied · " + WCODE.chars.toLocaleString() + " letters"); else { selectNode($("#wcode")); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
   if (act === "copy-save") { if (SAVE) copyText(SAVE.text).then(ok => { if (ok) { markBackup(); toast("Save code copied · " + SAVE.chars.toLocaleString() + " letters"); } else { const ta = $("#save-text"); ta.focus(); ta.select(); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
   if (act === "save-image") return makeSaveImages();
   if (act === "share-img") return shareImage(+b.dataset.i);
@@ -910,8 +901,12 @@ async function addFromCodes(blocks) {
   if (!confirm(ask)) { say(read + "Nothing was added. " + trouble, !!broken.length); return false; }
   applyMerge(plan);
   const done = "Added " + plural(plan.add.length, "workout") + (plan.dupes ? ", " + plural(plan.dupes, "duplicate") + " skipped" : "");
-  if (broken.length) { const keep = RESTORE; viewBackup(); RESTORE = keep; say(read + done + ". " + trouble, true); toast(done); }
-  else { RESTORE = []; go("#/"); toast(done); }
+  // Stay here: the code at the top is rebuilt and now holds the merged history, and the box is ready for the next code.
+  const keep = broken.length ? RESTORE : [];
+  NOTE = done + ". The code below now holds all " + plural(S.workouts.length, "workout") + " — copy it and the older codes can go.";
+  viewBackup(); RESTORE = keep; window.scrollTo(0, 0);
+  if (broken.length) say(read + trouble, true);
+  toast(done);
   return true;
 }
 function restoreFromText() {

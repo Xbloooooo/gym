@@ -34,11 +34,11 @@ Six cards so far: Pull and Push in each lane, all starting from the Hevy "Comeba
 
 ## Backup
 
-History → Backup & restore, and each workout's own page in History.
+History → Backup & restore.
 
-- **Save code** — workouts as letters. There are two kinds and they are the same format: one code for everything on
-  the phone (Backup page), and one code per workout (that workout's History page), to keep like a receipt.
-- **Codes merge.** Paste one code or any number of them together, in any order, with other text around them, and
+- **Current code** — everything on the phone as letters, one code that can cover any number of days. It is rebuilt
+  whenever the history changes, so the latest copy replaces any older code.
+- **Codes add up.** Add a code, then another, or paste several together, in any order, with other text around them, and
   the workouts in them are added to what is on the phone. A workout already there is skipped (same card, same start
   second), so overlapping codes and pasting twice are harmless. Nothing on the phone is removed. If the phone has
   no unfinished session, the newest one found in the codes comes along.
@@ -62,7 +62,7 @@ wrong, dropped or doubled letter is repaired. The CRC-32 covers each code. Lines
 prose and ignored. Format 1 (first day; check was "<line number>:<letters>") is still read.
 A code keeps the fields in the design doc's session shape; anything else on a session is only in the JSON export.
 
-A one-workout code is 21–30 lines with the current cards and fits one phone screenshot. A save image holds 180 lines.
+A code for one workout is 19–30 lines with the current cards; a phone screenshot shows about 50 lines. A save image holds 180 lines.
 
 ## Files
 
