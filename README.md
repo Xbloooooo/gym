@@ -63,6 +63,17 @@ down so it is easy to find and change (the code is under "what the page fills in
   it is tapped.
 - Unchecked sets are never logged, so a prefilled set that was not done costs nothing.
 
+## A workout's page
+
+History → a workout. Date and time, then minutes / sets / lifts done, the session note, then each lift that has
+checked sets as a row of weight × reps cells. Lifts with nothing checked are folded into one "Not done" line.
+
+Beside each lift is what changed since the last time that lift was logged on the same card: top weight, number of
+sets, and reps over the sets both days have (`+5 lb · −1 rep`, `+1 set · +2 reps`, `Same as last`, `First log`).
+It is in the accent colour when the load went up, or the load held and reps (or sets) went up; on assisted lifts a
+lower pin counts as up. The page shows only what was lifted, so a workout restored from a save code looks the same
+as one logged on the phone.
+
 ## Where the log lives
 
 `localStorage["gym_tracker_v1"]` in that one browser, for the `xbloooooo.github.io` origin:

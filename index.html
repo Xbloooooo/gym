@@ -184,7 +184,33 @@ h1,h2,h3,p{margin:0}
 .hrow small{display:block;margin-top:3px;font-size:14px;color:var(--muted)}
 .hrow .n{font:700 22px/1 var(--cond);font-variant-numeric:tabular-nums;text-align:right}
 .hrow .n small{font:600 11px/1 var(--cond);letter-spacing:.14em;text-transform:uppercase}
-.sum{margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font:400 13.5px/1.55 var(--mono);white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text}
+/* ---------- one workout ---------- */
+.wk-head{padding:22px 2px 0}
+.wk-eye,.wk-stats span,.wk-rest b{font:600 12px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.wk-date{margin-top:9px;font:700 44px/.92 var(--cond);letter-spacing:.005em;text-transform:uppercase}
+.wk-time{margin-top:9px;font-size:16px;color:var(--muted);font-variant-numeric:tabular-nums}
+.wk-stats{display:grid;grid-template-columns:repeat(3,1fr);margin-top:20px;border-top:2px solid var(--ink);border-bottom:1px solid var(--line)}
+.wk-stats div{padding:13px 0 12px 14px}
+.wk-stats div:first-child{padding-left:2px}
+.wk-stats div+div{border-left:1px solid var(--line)}
+.wk-stats b{display:block;margin-bottom:7px;font:700 34px/.9 var(--cond);font-variant-numeric:tabular-nums}
+.wk-stats i{font-style:normal;font-weight:600;font-size:20px;color:var(--faint)}
+.wk-note{margin:16px 2px 0;font-size:16px;font-style:italic;line-height:1.4;-webkit-user-select:text;user-select:text}
+.wk-list{margin-top:18px;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow)}
+.wk-lift{padding:16px 14px 14px 16px}
+.wk-lift+.wk-lift{border-top:1px solid var(--line)}
+.wk-lh{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:baseline}
+.wk-n{font:700 13px/1 var(--cond);letter-spacing:.06em;color:var(--faint);font-variant-numeric:tabular-nums}
+.wk-lift h2{font:700 21px/1.05 var(--cond);letter-spacing:.015em;text-transform:uppercase}
+.wk-delta{padding-left:6px;font:600 13px/1 var(--cond);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:var(--faint);font-variant-numeric:tabular-nums}
+.wk-delta.up{color:var(--accent)}
+.wk-kind{margin:5px 0 0 30px;font:600 11.5px/1 var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.wk-sets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 0 30px}
+.wk-sets div{padding:9px 4px 8px;border:1.5px solid var(--line);border-radius:12px;background:var(--raised);text-align:center}
+.wk-sets b{display:block;font:600 24px/1 var(--cond);letter-spacing:.01em;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk-sets span{display:block;margin-top:5px;font:500 14.5px/1 var(--body);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk-rest{margin:16px 2px 0;font-size:14.5px;line-height:1.55;color:var(--muted)}
+.wk-rest b{display:block;margin-bottom:5px}
 .stack>*+*{margin-top:10px}
 
 /* ---------- backup ---------- */
@@ -223,7 +249,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-15";
+const VERSION = "2026.11.17-16";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -565,23 +591,6 @@ function startRoutine(id) {
   if (clash && !confirm("You already logged " + clash.name + " today. Start " + r.name + " as well?")) return;
   S.draft = newSession(r); save(); go("#/session");
 }
-function setLine(e, x) {
-  const w = String(x.w == null ? "" : x.w).trim(), r = String(x.r == null ? "" : x.r).trim();
-  return (w || (e.log === "bodyweight" ? "bw" : "—")) + " x " + (r || "—");
-}
-function summary(s) {
-  const L = [s.name || "Workout", "started " + hm(s.startedAt) + " · finished " + (s.finishedAt ? hm(s.finishedAt) : "—")];
-  if (s.note && String(s.note).trim()) L.push("note: " + String(s.note).trim());
-  for (const e of s.exercises || []) {
-    const head = [e.name, e.log, e.target ? "target " + e.target : ""].filter(Boolean).join("  ");
-    const done = (e.sets || []).filter(x => x && x.done);
-    L.push("");
-    if (e.skipped || (e.optional && !done.length)) { L.push(head + "  — skipped (optional)"); continue; }
-    L.push(head);
-    if (!done.length) L.push("  no sets logged"); else for (const x of done) L.push("  " + setLine(e, x));
-  }
-  return L.join("\n");
-}
 async function finish() {
   const d = S.draft; if (!d) return;
   if (!doneSets(d)) return toast("Check at least one set first");
@@ -759,14 +768,47 @@ function viewHistory() {
   h += '<div class="sec"><a class="btn quiet" href="#/backup" style="text-decoration:none">Backup &amp; restore</a></div></div>';
   app.innerHTML = h;
 }
+/* A logged workout, laid out to be read at a glance: when, how long, then each lift as a row of sets, with what
+   changed since the last time that lift was done on this card. Lifts with nothing checked are folded into one line. */
+const KIND = { db: "per hand", cable: "stack", assist: "pin", machine: "stack pin", bar: "bar + plates", kb: "bell" };
+function liftDelta(e, done, w, i) {
+  let prev = null;
+  for (let k = i - 1; k >= 0 && !prev; k--) {
+    const o = S.workouts[k]; if (o.routineId !== w.routineId) continue;
+    const p = (o.exercises || []).find(x => x.name === e.name && !x.skipped), sets = p ? (p.sets || []).filter(x => x && x.done) : [];
+    if (sets.length) prev = sets;
+  }
+  if (!prev) return { text: "First log", up: false };
+  // Reps are compared over the sets both days have; an extra or missing set is said as such, not as a pile of reps.
+  const top = sets => { const v = sets.map(x => num(x.w)).filter(v => v != null); return v.length ? Math.max(...v) : null; }, n = Math.min(done.length, prev.length), reps = sets => sets.slice(0, n).reduce((t, x) => t + (num(x.r) || 0), 0);
+  const a = top(done), b = top(prev), dw = a != null && b != null ? a - b : 0, dr = reps(done) - reps(prev), ds = done.length - prev.length, sign = v => (v > 0 ? "+" : "−") + tidy(Math.abs(v));
+  const parts = []; if (dw) parts.push(sign(dw) + (e.log === "assist" ? " pin" : " lb")); if (ds) parts.push(sign(ds) + (Math.abs(ds) === 1 ? " set" : " sets")); if (dr) parts.push(sign(dr) + (Math.abs(dr) === 1 ? " rep" : " reps"));
+  const load = e.log === "assist" ? -dw : dw, better = load > 0 || (!load && (dr > 0 || (!dr && ds > 0)));
+  return { text: parts.length ? parts.join(" · ") : "Same as last", up: better };
+}
 function viewWorkout(i) {
   const w = S.workouts[i];
   if (!w) return go("#/history");
-  const m = minutes(w);
-  app.innerHTML = '<div class="view"><div class="bar"><button class="back" data-act="history">' + ICON.back + 'History</button><h1>' + esc(w.name || "Workout") + '</h1><span class="side"></span></div>' +
-    '<p class="fine" style="margin-top:16px">' + esc(day(w.startedAt)) + (m ? " · " + m + " min" : "") + " · " + doneSets(w) + " sets</p>" +
-    '<pre class="sum">' + esc(summary(w)) + '</pre><div class="stack">' +
-    '<button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
+  const m = minutes(w), d = new Date(w.startedAt), ok = !isNaN(d), lane = laneOf(w.routineId);
+  const lifts = (w.exercises || []).map(e => ({ e, done: e.skipped ? [] : (e.sets || []).filter(x => x && x.done) })), did = lifts.filter(l => l.done.length), not = lifts.filter(l => !l.done.length);
+  let h = '<div class="view"><div class="bar"><button class="back" data-act="history">' + ICON.back + 'History</button><h1>' + esc(w.name || "Workout") + '</h1><span class="side"></span></div>' +
+    '<header class="wk-head"><p class="wk-eye">' + esc((ok ? d.toLocaleDateString(undefined, { weekday: "long" }) + " · " : "") + lane.venue) + "</p>" +
+    '<p class="wk-date">' + esc(ok ? d.toLocaleDateString(undefined, { month: "long", day: "numeric" }) : "Undated") + "</p>" +
+    '<p class="wk-time">' + (ok ? hm(w.startedAt) + (w.finishedAt ? " – " + hm(w.finishedAt) : "") + (d.getFullYear() !== new Date().getFullYear() ? " · " + d.getFullYear() : "") : "") + "</p></header>" +
+    '<div class="wk-stats"><div><b>' + (m || "—") + "</b><span>Minutes</span></div><div><b>" + doneSets(w) + "</b><span>Sets</span></div><div><b>" + did.length + "<i>/" + lifts.length + "</i></b><span>Lifts</span></div></div>" +
+    (str(w.note) ? '<p class="wk-note">' + esc(str(w.note)) + "</p>" : "");
+  if (did.length) {
+    h += '<div class="wk-list">';
+    did.forEach((l, n) => {
+      const e = l.e, dl = liftDelta(e, l.done, w, i), kind = LOG[e.log] ? LOG[e.log][0] + (KIND[e.log] ? " · " + KIND[e.log] : "") : "";
+      h += '<section class="wk-lift"><div class="wk-lh"><span class="wk-n">' + pad2(n + 1) + "</span><h2>" + esc(e.name) + '</h2><span class="wk-delta' + (dl.up ? " up" : "") + '">' + esc(dl.text) + "</span></div>" +
+        (kind ? '<p class="wk-kind">' + esc(kind) + "</p>" : "") + '<div class="wk-sets">' +
+        l.done.map(x => "<div><b>" + esc(str(x.w) || (e.log === "bodyweight" ? "BW" : "—")) + "</b><span>× " + esc(str(x.r) || "—") + "</span></div>").join("") + "</div></section>";
+    });
+    h += "</div>";
+  } else h += '<p class="empty">No sets were checked in this workout.</p>';
+  if (not.length && did.length) h += '<p class="wk-rest"><b>Not done</b>' + not.map(l => esc(l.e.name) + (l.e.skipped ? " (skipped)" : "")).join(" · ") + "</p>";
+  app.innerHTML = h + '<div class="sec"><button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
 }
 
 /* ---------- backup ---------- */
