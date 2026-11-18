@@ -23,6 +23,8 @@ A save code from one copy can be added on another, because every copy writes the
 The plans on main (Home, Office gym and EoS; Pull and Push at each) are the owner's, left in as examples. Hide them
 with `hidden: true` or delete them, and put your own in `ROUTINES` (next section). There is no plan builder or importer in the page yet; a plan is written into the
 file by hand, or by an AI agent from a routine link, a screenshot or a description.
+Anyone (or any AI) editing the repo should read `AGENTS.md` first: the save-code rules, the check, and how to add a
+plan. `CLAUDE.md` points Claude Code at it.
 
 To send a change back, open a pull request against `main`. Run `node tools/check.js` first, leave the `VERSION`
 line as it is (main bumps it when it merges), and leave `CARDS`, `LIFTS` and `tests/fixtures/` alone. GitHub runs
