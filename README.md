@@ -65,8 +65,14 @@ down so it is easy to find and change (the code is under "what the page fills in
 
 ## A workout's page
 
-History → a workout. Date and time, then minutes / sets / lifts done, the session note, then each lift that has
-checked sets as a row of weight × reps cells. Lifts with nothing checked are folded into one "Not done" line.
+History → a workout. Weekday, gym and date, start–finish and minutes, then three numbers: lifts done out of the
+card's total, sets, and volume. Under that the session note, then one card per lift that has checked sets: an
+equipment pill, the lift's volume, and its sets as weight × reps cells with the best set outlined (heaviest, then
+most reps; on an assisted lift the lowest pin). Lifts with nothing checked are folded into one "Skipped" line.
+The History list shows sets and volume per workout.
+
+**Volume** is weight × reps over checked sets, exactly as logged. A dumbbell counts once at its per-hand weight (not
+doubled), an assisted lift is left out because its number is the assist pin, and a set without a number counts nothing.
 
 Beside each lift is what changed since the last time that lift was logged on the same card: top weight, number of
 sets, and reps over the sets both days have (`+5 lb · −1 rep`, `+1 set · +2 reps`, `Same as last`, `First log`).
