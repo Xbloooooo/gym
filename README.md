@@ -23,14 +23,15 @@ Everything a session reads is at the top of the script in `index.html`:
 - `TARGETS` — the "Due next" card on the home screen. Written by hand when a session is graded.
 - `LANES` — Home / Work / Day-pass. A routine belongs to a lane by its id prefix (`work_`, `eos_`, none = home).
 - `ROUTINES` — the cards. Same object shape as the design doc, so an existing `ROUTINES` array pastes straight in.
-- `CARD_IDS`, `LIFTS` — numbered lists the save code uses in place of names. **Append only**: a new or renamed lift
-  gets a new line at the end, and no line is ever reordered, removed or reused, or codes already written down
-  would name the wrong lift. A lift missing from the list still works; its name is spelled out in the code.
+- `CARDS`, `LIFTS` — numbered tables the save code uses in place of names. **Append only**: no line is ever
+  reordered, removed, reused or edited, or codes already written down would name the wrong card or lift. A card
+  that is taken off the page keeps its line, so its old workouts keep their name. A card or lift missing from the
+  tables still works; its name is spelled out in the code.
 
 When open loads change, change the exercise (`defaultWeight`, `defaultReps`, `target`, `note`), the routine `blurb`
 and `TARGETS` in the same commit. Then:
 
-    node tools/check.js          # syntax check, and says which cards or lifts are missing from the numbered lists
+    node tools/check.js          # syntax check, the cards against the numbered tables, a save-code round trip
     git commit -am "..." && git push
 
 Pages republishes in about a minute. Pages caches for 10 minutes; reload the phone until the version matches.
@@ -187,10 +188,15 @@ Weights are kept exactly when they are a multiple of 0.25 up to 999999.75, reps 
 9999; anything else typed in those boxes is kept as text (up to 40 characters), which costs more letters. Notes are
 kept up to 300 characters. Dates before 2020 are not representable.
 
-### Save code format (format 4)
+### Save code 1.0 (format 4)
 
-There is no compatibility between formats before 1.0: a code is read only by the format that wrote it. When the
-format changes, copy a fresh code from the new page (the log on the phone is not affected by a format change).
+The format is frozen. A code written by any copy of the page reads the same on every other copy, now and later:
+adding a workout plan, removing one or editing one does not change what a code already written down means. A
+workout on a plan that has since been removed still comes back under that plan's name. If the format ever has to
+change, the new one gets its own number and format 4 stays readable.
+
+A code from a newer copy can name a card or lift this copy has no number for yet; the page then says so and adds
+nothing, instead of guessing a name. Update the page and add the code again.
 
     record  = the list above, per workout, sorted by start time            canon()
     body    = the record through an adaptive range coder                    logCodec(), coder()
@@ -200,7 +206,7 @@ format changes, copy a fresh code from the new page (the log on the phone is not
 
 The body is short because almost everything is written as a guess that turned out right:
 
-- a card or a lift is its number in `CARD_IDS` / `LIFTS`;
+- a card or a lift is its number in `CARDS` / `LIFTS`;
 - the list of lifts is guessed to be the one that card had last time;
 - a weight is guessed to be the weight of the set before it, or what that lift opened with last time on that card;
 - reps are guessed to be what the same set got last time;
@@ -208,7 +214,8 @@ The body is short because almost everything is written as a guess that turned ou
 
 The coder (the binary range coder from LZMA, whole-number arithmetic only) learns how often each kind of guess is
 right, so a right one costs a fraction of a bit. Guesses use only what is earlier in the same code plus the two
-numbered lists, never the current text of a card, so editing a card does not change what an old code means.
+numbered tables, never the cards themselves, so editing, adding or removing a card does not change what an old code
+means.
 One function walks the record for both writing and reading, and every code is read back and compared before it is
 shown; if that ever fails the page says so instead of showing a code.
 
@@ -232,7 +239,7 @@ A phone screen shows about 40 lines of the code on the Backup page. A save image
 
 It takes what the page takes: one code or many, in any order, end to end or with other text around them, and merges
 them the same way. It runs the code functions straight out of `index.html` (`tools/page.js`), so it reads exactly
-the format the live page writes, and stops reading older codes when the page does.
+what the page reads.
 
 ## Files
 
@@ -240,7 +247,7 @@ the format the live page writes, and stops reading older codes when the page doe
     manifest.webmanifest   name and icons for Add to Home Screen
     fonts/                 Barlow, Barlow Condensed (OFL 1.1), Cousine (Apache 2.0)
     ocr/                   tesseract.js 7.0.0, tesseract.js-core 7.0.0, English data (Apache 2.0); loaded only when an image is read
-    tools/check.js         syntax check, cards against the numbered lists, and a save-code round trip in node
+    tools/check.js         syntax check, cards against the numbered tables, and a save-code round trip in node
     tools/decode.js        save code(s) → readable workouts
     tools/page.js          loads the cards and the save-code functions out of index.html for the two tools above
     tools/make_icons.py    redraws the icons

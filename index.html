@@ -352,7 +352,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-21";
+const VERSION = "2026.11.18-1";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -486,11 +486,28 @@ const LOG = {
   bodyweight: ["Bodyweight", "reps or minutes — weight can stay blank"]
 };
 
-/* Numbered lists the save code leans on: it writes a card or a lift as its position here instead of its name.
-   APPEND ONLY. Never reorder, delete or reuse a line — every code already written down would then name the wrong
-   lift. A new or renamed lift gets a new line at the end (`node tools/check.js` says when one is missing).
-   A lift that is not listed still works; its name is spelled out in the code, which only costs letters. */
-const CARD_IDS = ["pull", "push", "legs", "easy", "work_pull", "work_push", "work_legs", "work_easy", "eos_pull", "eos_push"];
+/* Numbered tables the save code leans on: it writes a card or a lift as its line number here instead of its name.
+   This is save code 1.0 and these lines are part of it. APPEND ONLY, and only on main: never reorder, delete, reuse
+   or edit a line. Every code already written down would then name the wrong card or lift, with no error to say so.
+     - A card taken out of ROUTINES keeps its line here: its old workouts are still called by the name beside its id.
+     - An id and its name are one pair. A card that is renamed gets a new id and a new line; the old line stays.
+     - A renamed lift gets a new line; the old line stays, so old codes keep the old name.
+     - A card or a lift that is not listed works everywhere all the same: its name is spelled out in the code, which
+       only costs letters. A fork leaves these tables alone; main lists a plan when it merges it.
+   tests/fixtures/ holds codes written under these tables, and `node tools/check.js` reads them back (AGENTS.md). */
+const CARDS = [
+  ["pull", "Home Pull"],                         // 1
+  ["push", "Home Push"],
+  ["legs", "Home Legs"],                         // 3, 4, 7 and 8 were numbered before 1.0 for cards that are not on the page
+  ["easy", "Home Easy"],
+  ["work_pull", "Work Pull"],                    // 5
+  ["work_push", "Work Push"],
+  ["work_legs", "Work Legs"],
+  ["work_easy", "Work Easy"],
+  ["eos_pull", "EoS Pull"],
+  ["eos_push", "EoS Push"]                       // 10
+];
+const CARD_IDS = CARDS.map(c => c[0]);
 const LIFTS = [
   ["Seated cable row — V grip", "cable"],        // 1
   ["Assisted pull-up", "assist"],
@@ -1323,8 +1340,13 @@ function applyTheme() {
    belongs to and where: lines from many codes can arrive mixed, out of
    order or twice and still be sorted, a bad line is located and often
    repaired. A CRC-32 covers each code. Codes merge by workout.
-   No compatibility between formats before 1.0: bump FORMAT when the
-   record or the guessing changes, and old codes are simply not read.
+   This is save code 1.0 (format byte 4) and it is frozen: the letters,
+   the lines and their checks, the record, the walk and every key in it,
+   the coder, EPOCH_MIN, and the lines of CARDS and LIFTS. A code written
+   by any copy of this page has to read the same on every other copy,
+   now and later. Anything that would change what a code means is a new
+   FORMAT number beside this one, and format 4 stays readable for good.
+   tests/fixtures/ holds real codes; `node tools/check.js` reads them.
    ===================================================================== */
 const A16 = "ACDEHKLNPRSTUXYZ", LINE = 40, CHK = 4, FULL = LINE + CHK, PAGE = 180;
 const utf8 = new TextEncoder(), utf8d = new TextDecoder();
@@ -1344,14 +1366,14 @@ const showLine = l => l.slice(0, -CHK).match(/.{1,5}/g).join(" ") + "  " + l.sli
    what the card said that day. The JSON export keeps everything.
 
    How it gets short. Nothing is written as text if it can be a guess that turned out right:
-     - cards and lifts are their numbers in CARD_IDS and LIFTS (anything unlisted is spelled out);
+     - cards and lifts are their numbers in CARDS and LIFTS (anything unlisted is spelled out);
      - the list of lifts is guessed to be the one this card had last time;
      - a weight is guessed to be the weight of the set before it, or what this lift opened with last time;
      - reps are guessed to be what the same set got last time;
      - a wrong guess is written as the step up or down from it.
    A right guess costs a fraction of a bit, because the coder below learns how often each kind of guess is right.
-   The guesses use only what is earlier in the same code plus the two numbered lists, never the current text of a
-   card, so editing a card does not change what an old code means. */
+   The guesses use only what is earlier in the same code plus the two numbered tables, never ROUTINES, so editing,
+   adding or removing a card does not change what an old code means. */
 const EPOCH_MIN = Date.UTC(2020, 0, 1) / 60000;
 const startMin = w => Math.floor(Date.parse(w.startedAt) / 60000) || 0;
 const asNum = (t, scale) => scale === 4 ? (/^\d{1,6}(\.\d{1,2})?$/.test(t) && Number.isInteger(+t * 4) ? +t * 4 : null) : /^\d{1,4}$/.test(t) ? +t : null;   // weights in quarter units, reps whole
@@ -1368,7 +1390,7 @@ function canon(workouts) {
   }).sort((a, b) => a.t - b.t);
 }
 function fromCanon(o) {
-  const r = routine(o.c), w = { routineId: o.c, name: o.cn || (r ? r.name : o.c), startedAt: new Date((o.t + EPOCH_MIN) * 60000).toISOString(), note: o.n };
+  const card = CARDS.find(c => c[0] === o.c), w = { routineId: o.c, name: o.cn || (card ? card[1] : o.c), startedAt: new Date((o.t + EPOCH_MIN) * 60000).toISOString(), note: o.n };
   if (o.d) w.finishedAt = new Date((o.t + o.d + EPOCH_MIN) * 60000).toISOString();
   w.exercises = o.x.map(e => { const l = LIFTS.find(l => l[0] === e.l),
     x = { name: e.l, repTarget: "", rest: 0, target: "", note: "", log: l ? l[1] : e.g, cue: "", form: null, optional: !!e.o, sets: e.v.map(v => ({ w: v[0], r: v[1], done: true })) };
@@ -1422,6 +1444,7 @@ function coder(input) {
 // reads and returns it. Every guess is made from `out`, the part already written or read.
 function logCodec(io, list) {
   const enc = io.enc, out = [], lastList = new Map(), mem = new Map(), bad = () => { throw new Error("it cannot be read"); };
+  const newer = (what, n, known) => { throw new Error("it uses " + what + " no. " + n + " and this copy of the page knows " + known + ": a newer copy wrote it, so update this one and add the code again"); };
   const value = (k, v, guess, scale, alt) => {      // a weight or a rep count: blank, a number, or free text
     if (guess != null && io.bit(k + "=", enc ? v === guess : 0)) return guess;
     if (alt != null && alt !== guess && io.bit(k + "~", enc ? v === alt : 0)) return alt;
@@ -1440,7 +1463,8 @@ function logCodec(io, list) {
   for (let a = 0; a < count; a++) {
     const w = enc ? list[a] : null, o = {};
     const ci = io.num("c" + prevCard, enc ? CARD_IDS.indexOf(w.c) + 1 : 0); prevCard = ci;
-    if (ci) { o.c = CARD_IDS[ci - 1] || "card-" + ci; o.cn = ""; } else { o.c = io.str("ci", enc ? w.c : ""); o.cn = io.str("cn", enc ? w.cn : ""); }
+    if (ci > CARD_IDS.length) newer("card", ci, CARD_IDS.length);
+    if (ci) { o.c = CARD_IDS[ci - 1]; o.cn = ""; } else { o.c = io.str("ci", enc ? w.c : ""); o.cn = io.str("cn", enc ? w.cn : ""); }
     // when: whole days since the workout before, then the minute of the day (its hour is learned, its minute is not)
     const day = Math.floor(prevT / 1440) + io.num("D", enc ? Math.floor(w.t / 1440) - Math.floor(prevT / 1440) : 0); let m = 1;
     for (let j = 10; j >= 0; j--) m = m * 2 + io.bit("m" + (j > 5 ? m : -j), enc ? w.t % 1440 >> j & 1 : 0);
@@ -1454,7 +1478,8 @@ function logCodec(io, list) {
       const n = io.num("L#", enc ? w.x.length : 0); let pl = 0; if (n > 300) bad(); o.x = [];
       for (let i = 0; i < n; i++) {
         const e = enc ? w.x[i] : null, li = io.num("l" + pl, enc ? LIFTS.findIndex(l => l[0] === e.l) + 1 : 0), r = {}; pl = li;
-        if (li) { r.l = (LIFTS[li - 1] || ["lift-" + li])[0]; r.g = ""; } else { r.l = io.str("ln", enc ? e.l : ""); r.g = io.str("lg", enc ? e.g : ""); }
+        if (li > LIFTS.length) newer("lift", li, LIFTS.length);
+        if (li) { r.l = LIFTS[li - 1][0]; r.g = ""; } else { r.l = io.str("ln", enc ? e.l : ""); r.g = io.str("lg", enc ? e.g : ""); }
         r.o = io.bit("o" + li, enc ? e.o : 0); o.x.push(r);
       }
     }
@@ -1611,7 +1636,7 @@ async function addFromCodes(blocks, fromImage) {
   if (!codes.length) {
     const old = !fromImage && blocks.some(b => b.some(l => l.length >= 30 && [...l].every(ch => A16.includes(ch))));
     say(fromImage ? "No save code could be read in " + (blocks.length > 1 ? "those images" : "that image") + ". The first line of the code has to be in the picture, whole and sharp. A screenshot of this page or of the save image reads best." :
-      old ? "Those letters are not a code this version can read. If it was copied from an earlier version of this page, it is in an old format: codes are not carried across versions yet." :
+      old ? "Those letters are not a code this page can read. If it was copied before save code 1.0, it is in an old format that is no longer read." :
       "No save code found in that. A code is recognised by its first line, so the top of it has to be included.", true); return false;
   }
   const good = [], broken = [];
