@@ -63,19 +63,36 @@ down so it is easy to find and change (the code is under "what the page fills in
   it is tapped.
 - Unchecked sets are never logged, so a prefilled set that was not done costs nothing.
 
+## How a weight is drawn
+
+A set's weight never has "lb" written beside it; the drawing says what the number is. The same three marks are used
+on the logging screen, on a workout's page, and in the change tags (`+5` followed by a small dumbbell or weight).
+
+| The lift's `log` | Drawn as | Means |
+|---|---|---|
+| `db` | a small dumbbell on each side of the number | weight per hand |
+| `cable`, `machine`, `bar`, `kb` | the number on a weight block (a trapezoid with a handle loop) | the stack, the bar with its plates, the bell |
+| `assist` | the number in parentheses, `(100)` | the assist pin: help, not load |
+| `bodyweight`, or no number | nothing | |
+
+On the logging screen the block is the weight box itself; on a workout's page each set of a block lift is a
+weight-shaped tile and the best set is the solid one. Units stay only where a number would be ambiguous: volume.
+All of it is inline SVG in the theme's colours (`dbSVG`, `blockSVG`, `UNIT` in `index.html`), display only.
+
 ## A workout's page
 
 History → a workout. Weekday, gym and date, start–finish and minutes, then three numbers: lifts done out of the
 card's total, sets, and volume. Under that the session note, then one card per lift that has checked sets: an
-equipment pill, the lift's volume, and its sets as weight × reps cells with the best set outlined (heaviest, then
-most reps; on an assisted lift the lowest pin). Lifts with nothing checked are folded into one "Skipped" line.
+equipment pill, the lift's volume, and its sets as weight × reps tiles, three to a row, with the best set marked
+(heaviest, then most reps; on an assisted lift the lowest pin). Lifts with nothing checked are folded into one "Skipped" line.
 The History list shows sets and volume per workout.
 
-**Volume** is weight × reps over checked sets, exactly as logged. A dumbbell counts once at its per-hand weight (not
-doubled), an assisted lift is left out because its number is the assist pin, and a set without a number counts nothing.
+**Volume** is weight × reps over checked sets. A dumbbell lift is logged per hand and counts both hands (40 × 8 is
+640 lb), an assisted lift is left out because its number is the assist pin, and a set without a number counts
+nothing. A lift done one arm at a time with a dumbbell is therefore counted double.
 
 Beside each lift is what changed since the last time that lift was logged on the same card: top weight, number of
-sets, and reps over the sets both days have (`+5 lb · −1 rep`, `+1 set · +2 reps`, `Same as last`, `First log`).
+sets, and reps over the sets both days have (`+5 ⚖ · −1 rep`, `+1 set · +2 reps`, `Same as last`, `First log`).
 It is in the accent colour when the load went up, or the load held and reps (or sets) went up; on assisted lifts a
 lower pin counts as up. The page shows only what was lifted, so a workout restored from a save code looks the same
 as one logged on the phone.
@@ -85,15 +102,15 @@ as one logged on the phone.
 History → Progress: the whole log in pictures, for all gyms or one (the chips at the top).
 
 - **Three numbers**: workouts, sessions per week over the last four weeks (fewer if the log is younger), total volume.
+- **Lift progress**, the headline chart: pick a lift; its best set of each session over time, or the estimated
+  one-rep max (weight × (1 + reps ÷ 30), best over the session's sets). One line per card, because loads do not carry
+  between gyms: solid for the card the lift is done most on, then dashed, then dotted, three at most.
+  An **assisted lift** plots the pin upside down, so a lower pin (less help) is higher and up is always progress.
+  A lift with no load plots the reps of its best set.
 - **Training days**: the last 16 weeks as a calendar, Monday at the top, one square per day, darker for more sets
   (up to 10, up to 18, more). Today is outlined.
 - **Volume per week**: the same 16 weeks as bars, the current week in the accent colour, the number of sessions under
   each bar.
-- **Lift progress**: pick a lift; its best set of each session over time, or the estimated one-rep max
-  (weight × (1 + reps ÷ 30), best over the session's sets). One line per card, because loads do not carry between
-  gyms: solid for the card the lift is done most on, then dashed, then dotted, three at most.
-  An **assisted lift** plots the pin upside down, so a lower pin (less help) is higher and up is always progress.
-  A lift with no load plots the reps of its best set.
 - **Every lift**: latest best set, change since its first log on its main card, and a small trend. Tapping one
   charts it.
 

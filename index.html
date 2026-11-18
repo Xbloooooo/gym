@@ -137,6 +137,28 @@ h1,h2,h3,p{margin:0}
 .set.done .chk{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .set.done input{background:var(--done-bg);border-color:transparent}
 .set.done .set-n{color:var(--ink)}
+/* the weight cell is drawn by what its number means: dumbbells beside it, a weight block under it, or parentheses */
+.wbox{position:relative;min-width:0;font:600 26px/1 var(--cond);letter-spacing:.02em}
+.wbox input{position:relative}
+.dbg{fill:var(--faint)}
+.wbox .dbg{position:absolute;z-index:1;top:50%;width:22px;height:12px;margin-top:-6px;pointer-events:none}
+.wbox .dbg.l{right:calc(50% + var(--n) * .5ch + 5px);transform:rotate(-58deg)}
+.wbox .dbg.r{left:calc(50% + var(--n) * .5ch + 5px);transform:rotate(58deg)}
+.wbox.ast::before,.wbox.ast::after{position:absolute;z-index:1;top:50%;margin-top:-17px;font:400 30px/1 var(--cond);color:var(--faint);pointer-events:none}
+.wbox.ast::before{content:"(";right:calc(50% + var(--n) * .5ch + 1px)}
+.wbox.ast::after{content:")";left:calc(50% + var(--n) * .5ch + 1px)}
+.set.cur .dbg,.set.done .dbg{fill:var(--ink)}
+.set.cur .wbox.ast::before,.set.cur .wbox.ast::after,.set.done .wbox.ast::before,.set.done .wbox.ast::after{color:var(--ink)}
+.wblk{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.wb-b{fill:var(--raised);stroke:var(--line);stroke-width:2;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.wb-h{fill:none;stroke:var(--line);stroke-width:3.5;vector-effect:non-scaling-stroke}
+.wbox.blk input,.set.cur .wbox.blk input,.set.done .wbox.blk input{padding-top:8px;border-color:transparent;background:none}
+.wbox.blk:focus-within .wb-b,.wbox.blk:focus-within .wb-h,.set.cur .wbox .wb-b,.set.cur .wbox .wb-h{stroke:var(--ink)}
+.set.done .wbox .wb-b{fill:var(--done-bg);stroke:var(--done-bg)}
+.set.done .wbox .wb-h{stroke:var(--done-bg)}
+[data-theme="stealth"] .wb-b,[data-theme="stealth"] .wb-h{stroke:var(--faint)}
+.ug{display:inline-block;width:11px;height:10px;margin-left:3px;vertical-align:-1px;fill:currentColor}
+.ug.db{width:16px;height:9px;vertical-align:-.5px}
 /* the set being worked on is the strong one; the ones after it are still only suggestions */
 .set:not(.done):not(.cur) input{color:var(--muted)}
 .set.cur input{border-color:var(--ink)}
@@ -205,12 +227,24 @@ h1,h2,h3,p{margin:0}
 .wk-delta{padding-left:6px;font:600 13px/1 var(--cond);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:var(--faint);font-variant-numeric:tabular-nums}
 .wk-delta.up{color:var(--accent)}
 .wk-kind{display:flex;align-items:center;gap:8px;margin:8px 0 0 30px;font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
-.wk-sets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 0 30px}
-.wk-sets div{padding:9px 4px 8px;border:1.5px solid var(--line);border-radius:12px;text-align:center}
-.wk-sets b{display:block;font:600 24px/1 var(--cond);letter-spacing:.01em;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wk-sets span{display:block;margin-top:5px;font:500 14.5px/1 var(--body);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk-sets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 0 30px}
+.wk-sets .wt{position:relative;min-width:0;padding:10px 4px 9px;border:1.5px solid var(--line);border-radius:12px;text-align:center}
+.wk-sets b{position:relative;display:flex;align-items:center;justify-content:center;font:600 25px/1 var(--cond);letter-spacing:.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wk-sets i{min-width:0;font-style:normal;overflow:hidden;text-overflow:ellipsis}
+.wk-sets span{position:relative;display:block;margin-top:5px;font:500 14.5px/1 var(--body);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk-sets .dbg{flex:none;width:20px;height:11px;margin:0 1px}
+.wk-sets .dbg.l{transform:rotate(-58deg)}
+.wk-sets .dbg.r{transform:rotate(58deg)}
 .wk-sets .best{border-color:var(--ink);background:var(--raised)}
 .wk-sets .best span{color:var(--ink)}
+.wk-sets .best .dbg{fill:var(--ink)}
+/* a block weight is its own tile: the outline is the weight, and the best set is the solid one */
+.wk-sets .blk,.wk-sets .blk.best{padding:17px 4px 10px;border-color:transparent;background:none}
+.wk-sets .blk .wb-b{fill:none}
+.wk-sets .blk.best .wb-b{fill:var(--ink);stroke:var(--ink)}
+.wk-sets .blk.best .wb-h{stroke:var(--ink)}
+.wk-sets .blk.best b{color:var(--bg)}
+.wk-sets .blk.best span{color:var(--bg);opacity:.72}
 .wk-rest{margin:18px 2px 0;font-size:14.5px;line-height:1.55;color:var(--muted)}
 .wk-rest b{display:block;margin-bottom:5px}
 /* ---------- progress ---------- */
@@ -305,7 +339,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-18";
+const VERSION = "2026.11.17-19";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -569,8 +603,31 @@ function stepFor(e, v, dir) {
   if (e.log === "cable") return v % 5 || low(20) ? 2.5 : 5;
   return 5;
 }
+/* ---------- how a weight is drawn ----------
+   The picture says what the number is, so no "lb" is written beside a set's weight:
+     per hand (dumbbells)     a small dumbbell on each side of the number
+     a stack, a bar, a bell   the number sits on a weight block
+     assist pin               the number in parentheses: it is help, not load
+     bodyweight / no number   nothing
+   Display only. Nothing here touches what is stored or what goes into a save code. */
+const wKind = (e, w) => e.log === "assist" ? "ast" : e.log === "db" ? "db" : e.log === "bodyweight" || !e.log ? (str(w) ? "blk" : "bw") : "blk";
+const DB_RECTS = '<rect y="3" width="3.4" height="6" rx="1.2"/><rect x="4" width="4" height="12" rx="1.6"/><rect x="8" y="4.6" width="6" height="2.8"/><rect x="14" width="4" height="12" rx="1.6"/><rect x="18.6" y="3" width="3.4" height="6" rx="1.2"/>';
+const dbSVG = side => '<svg class="dbg ' + side + '" viewBox="0 0 22 12" aria-hidden="true">' + DB_RECTS + "</svg>";
+// A weight block W wide and H tall: a trapezoid with soft corners and a handle loop on top. Stretches to its box.
+function blockSVG(W, H) {
+  const t = 8, s = Math.round(W * .07), c = W / 2;
+  return '<svg class="wblk" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true"><path class="wb-h" d="M' + (c - 11) + " " + (t + 1) + "V7Q" + (c - 11) + " 1.8 " + (c - 5.5) + " 1.8H" + (c + 5.5) + "Q" + (c + 11) + " 1.8 " + (c + 11) + " 7V" + (t + 1) + '"/>' +
+    '<path class="wb-b" d="M' + (s + 8) + " " + t + "H" + (W - s - 8) + "Q" + (W - s - 1) + " " + t + " " + (W - s + .4) + " " + (t + 7) + "L" + (W - 1.6) + " " + (H - 9) + "Q" + (W - .6) + " " + (H - 1) + " " + (W - 9) + " " + (H - 1) + "H9Q.6 " + (H - 1) + " 1.6 " + (H - 9) + "L" + (s - .4) + " " + (t + 7) + "Q" + (s + 1) + " " + t + " " + (s + 8) + " " + t + 'Z"/></svg>';
+}
+// The same two marks at letter size, for a change like "+5".
+const UNIT = { db: '<svg class="ug db" viewBox="0 0 22 12" role="img" aria-label="per hand">' + DB_RECTS + "</svg>",
+  blk: '<svg class="ug" viewBox="0 0 14 13" role="img" aria-label="pounds"><path d="M4.8 3.4V2.5Q4.8.8 6.5.8H7.5Q9.2.8 9.2 2.5V3.4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.6 3H10.4Q11.7 3 12 4.2L13.3 10.6Q13.6 12.4 11.9 12.4H2.1Q.4 12.4.7 10.6L2 4.2Q2.3 3 3.6 3Z"/></svg>' };
+const wChange = (log, text) => log === "assist" ? "(" + text + ")" : text + UNIT[log === "db" ? "db" : "blk"];
+const wText = (e, w) => str(w) ? (e.log === "assist" ? "(" + str(w) + ")" : str(w)) : e.log === "bodyweight" ? "BW" : "—";      // where there is only text
+const charsOf = v => { const t = str(v) || "0"; return Math.max(1, t.length - (t.split(".").length - 1) * .5); };            // how wide a number is, in digits
+const fitW = el => { const b = el && el.closest(".wbox"); if (b) b.style.setProperty("--n", charsOf(el.value)); };              // keeps the marks beside the number
 function lastLine(e, prev) {
-  const none = e.log === "bodyweight" ? "bw" : "—", ws = prev.sets.map(x => str(x.w) || none), rs = prev.sets.map(x => str(x.r) || "—");
+  const ws = prev.sets.map(x => wText(e, x.w)), rs = prev.sets.map(x => str(x.r) || "—");
   return ws.every(w => w === ws[0]) ? ws[0] + " × " + rs.join(", ") : ws.map((w, i) => w + "×" + rs[i]).join(", ");
 }
 function bumpFor(e, prev) {
@@ -599,7 +656,7 @@ function placeAdj(exEl, e, j) {
 function setWeight(e, exEl, j, val, old) {
   e.sets.forEach((x, k) => {
     if (k !== j && !(k > j && !x.done && (str(x.w) === old || str(x.w) === ""))) return;
-    x.w = val; const el = exEl.querySelector('.set[data-s="' + k + '"] .w'); if (el && (k !== j || el !== document.activeElement)) el.value = val;
+    x.w = val; const el = exEl.querySelector('.set[data-s="' + k + '"] .w'); if (el && (k !== j || el !== document.activeElement)) el.value = val; fitW(el);
   });
 }
 function nudge(e, exEl, j, field, d) {
@@ -608,7 +665,7 @@ function nudge(e, exEl, j, field, d) {
     const old = str(x.w), w = num(old), t = targetLoad(e);
     const to = w == null ? (old === "" && d > 0 ? (t != null ? t : stepFor(e, 0, 1)) : null) : Math.max(0, w + d * stepFor(e, w, d));
     if (to == null) return;
-    setWeight(e, exEl, j, tidy(to), old); const el = exEl.querySelector('.set[data-s="' + j + '"] .w'); if (el) el.value = x.w;
+    setWeight(e, exEl, j, tidy(to), old); const el = exEl.querySelector('.set[data-s="' + j + '"] .w'); if (el) { el.value = x.w; fitW(el); }
   } else {
     const r = num(x.r), rr = repRange(e), to = r == null ? (str(x.r) === "" && d > 0 ? (rr ? rr[0] : 1) : null) : Math.max(0, Math.round(r) + d);
     if (to == null) return;
@@ -792,14 +849,15 @@ function viewSession() {
       const links = [["exrx", "ExRx"], ["wiki", "Wiki"], ["yt", "Video"]].filter(k => e.form[k[0]]);
       if (links.length) h += '<p class="ex-form">' + links.map(k => '<a href="' + esc(e.form[k[0]]) + '" target="_blank" rel="noopener">' + k[1] + "</a>").join("") + "</p>";
     }
-    const prev = lastTime(d.routineId, e.name), bump = bumpFor(e, prev), cur = curSet(e);
+    const prev = lastTime(d.routineId, e.name), bump = bumpFor(e, prev), cur = curSet(e), wk = e.log === "bodyweight" || !e.log ? "bw" : wKind(e, "x");
     if (prev) h += '<p class="ex-last">Last time · ' + esc(day(prev.at)) + " · <b>" + esc(lastLine(e, prev)) + "</b></p>";
     if (bump) h += '<button class="bump" data-act="bump" data-to="' + esc(bump.to) + '" data-reps="' + esc(bump.reps) + '">Every set reached ' + bump.top + " last time. <b>" +
       (e.log === "assist" ? "Drop the assist to " : "Move up to ") + esc(bump.to) + "</b></button>";
-    h += '<div class="sets"><div class="set-h"><span>Set</span><span>' + (e.log === "assist" ? "Pin" : "lb") + "</span><span>Reps</span><span>Done</span></div>";
+    h += '<div class="sets"><div class="set-h"><span>Set</span><span>' + (e.log === "assist" ? "Assist" : e.log === "db" ? "Per hand" : "Weight") + "</span><span>Reps</span><span>Done</span></div>";
     e.sets.forEach((x, j) => {
       h += '<div class="set' + (x.done ? " done" : "") + (j === cur ? " cur" : "") + '" data-s="' + j + '"><span class="set-n">' + (j + 1) + "</span>" +
-        '<input class="w" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="' + (e.log === "bodyweight" ? "—" : e.log === "assist" ? "pin" : "lb") + '" aria-label="Set ' + (j + 1) + ' weight" value="' + esc(x.w) + '">' +
+        '<div class="wbox ' + wk + '" style="--n:' + charsOf(x.w) + '">' + (wk === "blk" ? blockSVG(120, 54) : wk === "db" ? dbSVG("l") + dbSVG("r") : "") +
+        '<input class="w" inputmode="decimal" autocomplete="off" enterkeyhint="next" placeholder="—" aria-label="Set ' + (j + 1) + ' weight" value="' + esc(x.w) + '"></div>' +
         '<input class="r" inputmode="numeric" autocomplete="off" enterkeyhint="done" placeholder="reps" aria-label="Set ' + (j + 1) + ' reps" value="' + esc(x.r) + '">' +
         '<button class="chk" data-act="check" aria-pressed="' + (x.done ? "true" : "false") + '" aria-label="Set ' + (j + 1) + ' done">' + ICON.check + "</button></div>" +
         (j === cur ? adjHTML(e, j) : "");
@@ -814,9 +872,9 @@ function progress() { const d = S.draft, p = $(".prog i"); if (d && p) { const a
 function grow(ta) { if (ta) { ta.style.height = "auto"; ta.style.height = Math.max(50, ta.scrollHeight + 2) + "px"; } }
 
 /* ---------- history ---------- */
-/* Volume is weight × reps over checked sets, exactly as logged: a dumbbell counts once at its per-hand weight, the
-   assist pin of an assisted lift is not a load so it is left out, and a set without a number counts nothing. */
-const liftVolume = e => e.skipped || e.log === "assist" ? 0 : (e.sets || []).reduce((t, x) => t + (x && x.done ? (num(x.w) || 0) * (num(x.r) || 0) : 0), 0);
+/* Volume is weight × reps over checked sets. A dumbbell lift is logged per hand and counts both hands (40 × 8 is
+   640), the assist pin of an assisted lift is not a load so it is left out, and a set without a number counts nothing. */
+const liftVolume = e => e.skipped || e.log === "assist" ? 0 : (e.log === "db" ? 2 : 1) * (e.sets || []).reduce((t, x) => t + (x && x.done ? (num(x.w) || 0) * (num(x.r) || 0) : 0), 0);
 const volume = w => (w.exercises || []).reduce((t, e) => t + liftVolume(e), 0);
 const lbs = n => Math.round(n).toLocaleString("en-US");
 // The best set of a lift: heaviest, then most reps. On an assisted lift the lowest pin is the heaviest.
@@ -843,7 +901,7 @@ function viewHistory() {
 /* A logged workout, laid out to be read at a glance: when, where, how long; lifts, sets and volume; then a card per
    lift with its sets, the best one marked, and what changed since the last time that lift was done on this card.
    Lifts with nothing checked are folded into one line. */
-const KIND = { db: "per hand", cable: "stack", assist: "lower pin is harder", machine: "stack pin", bar: "bar + plates", kb: "bell" };
+const KIND = { db: "both hands", assist: "lower pin is harder" };
 function liftDelta(e, done, w, i) {
   let prev = null;
   for (let k = i - 1; k >= 0 && !prev; k--) {
@@ -851,13 +909,13 @@ function liftDelta(e, done, w, i) {
     const p = (o.exercises || []).find(x => x.name === e.name && !x.skipped), sets = p ? (p.sets || []).filter(x => x && x.done) : [];
     if (sets.length) prev = sets;
   }
-  if (!prev) return { text: "First log", up: false };
+  if (!prev) return { html: "First log", up: false };
   // Reps are compared over the sets both days have; an extra or missing set is said as such, not as a pile of reps.
   const top = sets => { const v = sets.map(x => num(x.w)).filter(v => v != null); return v.length ? (e.log === "assist" ? Math.min(...v) : Math.max(...v)) : null; }, n = Math.min(done.length, prev.length), reps = sets => sets.slice(0, n).reduce((t, x) => t + (num(x.r) || 0), 0);
   const a = top(done), b = top(prev), dw = a != null && b != null ? a - b : 0, dr = reps(done) - reps(prev), ds = done.length - prev.length, sign = v => (v > 0 ? "+" : "−") + tidy(Math.abs(v));
-  const parts = []; if (dw) parts.push(sign(dw) + (e.log === "assist" ? " pin" : " lb")); if (ds) parts.push(sign(ds) + (Math.abs(ds) === 1 ? " set" : " sets")); if (dr) parts.push(sign(dr) + (Math.abs(dr) === 1 ? " rep" : " reps"));
+  const parts = []; if (dw) parts.push(wChange(e.log, sign(dw))); if (ds) parts.push(sign(ds) + (Math.abs(ds) === 1 ? " set" : " sets")); if (dr) parts.push(sign(dr) + (Math.abs(dr) === 1 ? " rep" : " reps"));
   const load = e.log === "assist" ? -dw : dw, better = load > 0 || (!load && (dr > 0 || (!dr && ds > 0)));
-  return { text: parts.length ? parts.join(" · ") : "Same as last", up: better };
+  return { html: parts.length ? parts.join(" · ") : "Same as last", up: better };
 }
 function viewWorkout(i) {
   const w = S.workouts[i];
@@ -873,9 +931,10 @@ function viewWorkout(i) {
   if (!did.length) h += '<p class="empty">No sets were checked in this workout.</p>';
   did.forEach((l, n) => {
     const e = l.e, dl = liftDelta(e, l.done, w, i), top = l.done.length > 1 ? topSet(e, l.done) : -1, lv = liftVolume(e);
-    h += '<section class="wk-lift"><div class="wk-lh"><span class="wk-n">' + pad2(n + 1) + "</span><h2>" + esc(e.name) + '</h2><span class="wk-delta' + (dl.up ? " up" : "") + '">' + esc(dl.text) + "</span></div>" +
-      '<p class="wk-kind">' + (LOG[e.log] ? '<span class="tag">' + LOG[e.log][0] + "</span>" : "") + "<span>" + [KIND[e.log], lv ? lbs(lv) + " lb" : ""].filter(Boolean).join(" · ") + "</span></p>" +
-      '<div class="wk-sets">' + l.done.map((x, k) => '<div' + (k === top ? ' class="best"' : "") + "><b>" + esc(str(x.w) || (e.log === "bodyweight" ? "BW" : "—")) + "</b><span>× " + esc(str(x.r) || "—") + "</span></div>").join("") + "</div></section>";
+    h += '<section class="wk-lift"><div class="wk-lh"><span class="wk-n">' + pad2(n + 1) + "</span><h2>" + esc(e.name) + '</h2><span class="wk-delta' + (dl.up ? " up" : "") + '">' + dl.html + "</span></div>" +
+      '<p class="wk-kind">' + (LOG[e.log] ? '<span class="tag">' + LOG[e.log][0] + "</span>" : "") + "<span>" + [lv ? lbs(lv) + " lb" : "", KIND[e.log]].filter(Boolean).join(" · ") + "</span></p>" +
+      '<div class="wk-sets">' + l.done.map((x, k) => { const v = esc(str(x.w)), wk = v ? wKind(e, x.w) : "bw";
+        return '<div class="wt ' + wk + (k === top ? " best" : "") + '">' + (wk === "blk" ? blockSVG(100, 66) : "") + "<b>" + (wk === "db" && v ? dbSVG("l") + "<i>" + v + "</i>" + dbSVG("r") : "<i>" + esc(wText(e, x.w)) + "</i>") + "</b><span>× " + esc(str(x.r) || "—") + "</span></div>"; }).join("") + "</div></section>";
   });
   if (not.length && did.length) h += '<p class="wk-rest"><b>Skipped</b>' + not.map(l => esc(l.e.name)).join(", ") + "</p>";
   app.innerHTML = h + '<div class="sec"><button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
@@ -901,7 +960,7 @@ function progressData(lane) {
     const b = sets[topSet(e, sets)], e1 = Math.max(0, ...sets.map(x => num(x.w) != null && num(x.r) ? num(x.w) * (1 + num(x.r) / 30) : 0));
     let L = lifts.get(e.name); if (!L) lifts.set(e.name, L = { name: e.name, log: e.log || "", cards: new Map(), n: 0 });
     let c = L.cards.get(w.routineId); if (!c) L.cards.set(w.routineId, c = { name: (routine(w.routineId) || {}).name || w.name || w.routineId, pts: [] });
-    c.pts.push({ t: Date.parse(w.startedAt), w: num(b.w), r: num(b.r), e1: e1 || null, label: (str(b.w) || (e.log === "bodyweight" ? "BW" : "—")) + " × " + (str(b.r) || "—") }); L.n++;
+    c.pts.push({ t: Date.parse(w.startedAt), w: num(b.w), r: num(b.r), e1: e1 || null, label: wText(e, b.w) + " × " + (str(b.r) || "—") }); L.n++;
   }
   const list = [...lifts.values()].sort((a, b) => b.n - a.n);          // most logged first; ties stay in the order they were first done
   for (const L of list) {
@@ -915,10 +974,10 @@ const liftVal = (p, kind, mode) => kind === "reps" ? p.r : kind === "assist" ? p
 const seriesOf = (L, mode) => L.cards.map(c => ({ name: c.name, pts: c.pts.map(p => ({ t: p.t, v: liftVal(p, L.kind, mode), label: p.label })).filter(p => p.v != null) })).filter(s => s.pts.length);
 function liftChange(L) {            // first log -> latest, on the card this lift is done most on
   const p = L.cards[0].pts, a = p[0], b = p[p.length - 1];
-  if (p.length < 2) return { text: "New", up: false };
+  if (p.length < 2) return { html: "New", up: false };
   const dw = a.w != null && b.w != null ? b.w - a.w : 0, dr = (b.r || 0) - (a.r || 0), sign = v => (v > 0 ? "+" : "−") + tidy(Math.abs(v));
   const load = L.kind === "assist" ? -dw : dw;
-  return { text: dw ? sign(dw) + (L.kind === "assist" ? " pin" : " lb") : dr ? sign(dr) + (Math.abs(dr) === 1 ? " rep" : " reps") : "Level", up: load > 0 || (!load && dr > 0) };
+  return { html: dw ? wChange(L.log, sign(dw)) : dr ? sign(dr) + (Math.abs(dr) === 1 ? " rep" : " reps") : "Level", up: load > 0 || (!load && dr > 0) };
 }
 const weekList = now => Array.from({ length: WEEKS }, (_, k) => { const d = new Date(mondayOf(now)); d.setDate(d.getDate() - 7 * (WEEKS - 1 - k)); return d.getTime(); });
 const GUT = 22, GAP = 4, VB = 384, CELL = (VB - GUT - (WEEKS - 1) * GAP) / WEEKS, colX = k => GUT + k * (CELL + GAP);
@@ -984,7 +1043,7 @@ function viewProgress() {
     '<div class="chips" role="group" aria-label="Gym">' + [{ key: "all", label: "All" }].concat(lanes).map(l => '<button class="chip' + (PG.lane === l.key ? " on" : "") + '" data-act="pg-lane" data-lane="' + l.key + '" aria-pressed="' + (PG.lane === l.key) + '">' + esc(l.key === "all" ? "All" : l.venue || l.label) + "</button>").join("") + "</div>" +
     '<div class="wk-stats"><div><b>' + D.ws.length + "</b><span>" + (D.ws.length === 1 ? "Workout" : "Workouts") + "</span></div><div><b>" + (D.ws.length ? f1(bars.last4 / span) : "—") + "</b><span>Per week</span></div><div><b>" + (D.ws.length ? kfmt(D.ws.reduce((t, w) => t + volume(w), 0)) : "—") + "</b><span>Volume · lb</span></div></div>";
   if (!D.ws.length) h += '<p class="pg-none">' + (S.workouts.length ? "No workouts" + esc(where) + " yet. They show up here as soon as one is finished." : "Nothing logged yet. Finish a workout and this page starts to fill in.") + "</p>";
-  h += '<section class="sec pg"><h2>Training days</h2>' + cal.svg + '<p class="pg-cap"><span>' + (cal.days ? plural(cal.days, "day") + " in the last " + WEEKS + " weeks" : "Last " + WEEKS + " weeks") + '</span><span class="pg-key">fewer sets<i class="k1"></i><i class="k2"></i><i class="k3"></i>more</span></p></section>' +
+  const usage = '<section class="sec pg"><h2>Training days</h2>' + cal.svg + '<p class="pg-cap"><span>' + (cal.days ? plural(cal.days, "day") + " in the last " + WEEKS + " weeks" : "Last " + WEEKS + " weeks") + '</span><span class="pg-key">fewer sets<i class="k1"></i><i class="k2"></i><i class="k3"></i>more</span></p></section>' +
     '<section class="sec pg"><h2>Volume per week</h2>' + bars.svg + '<p class="pg-cap"><span>' + (bars.max ? "This week " + lbs(bars.now) + " lb · best " + lbs(bars.max) + " lb" : "Pounds lifted each week") + "</span><span>sessions under each bar</span></p></section>";
   if (D.lifts.length) {
     const L = D.lifts.find(l => l.name === PG.lift) || D.lifts[0]; let mode = L.kind === "load" ? PG.mode : "top", series = seriesOf(L, mode);
@@ -1002,10 +1061,10 @@ function viewProgress() {
       '<p class="fine">' + (L.kind === "assist" ? "The number is the assist pin. A lower pin is less help, so the chart is drawn with lower pins higher: up is progress." :
         L.kind === "reps" ? "No load is logged for this lift, so the chart follows the reps of its best set." :
         mode === "e1" ? "Estimated one-rep max from the best set of each session: weight × (1 + reps ÷ 30). It moves when either the weight or the reps do." : "The heaviest set of each session; among equal weights, the one with most reps.") + "</p></section>"; }
-    h += '<section class="sec pg"><h2>Every lift</h2>' + D.lifts.map(l => { const sr = seriesOf(l, "top")[0], ch = liftChange(l), lp = l.cards[0].pts[l.cards[0].pts.length - 1];
-        return '<button class="lrow" data-act="pg-lift" data-lift="' + esc(l.name) + '"><span><b>' + esc(l.name) + "</b><small>" + esc(l.cards[0].name) + " · " + plural(l.cards[0].pts.length, "session") + (l.cards.length > 1 ? " · +" + plural(l.cards.length - 1, "card") : "") + '</small></span><span class="v"><b>' + esc(lp.label) + '</b><small' + (ch.up ? ' class="up"' : "") + ">" + esc(ch.text) + "</small></span>" + (sr ? sparkSVG(sr.pts, l.kind === "assist") : "<span></span>") + "</button>"; }).join("") +
+    h += usage + '<section class="sec pg"><h2>Every lift</h2>' + D.lifts.map(l => { const sr = seriesOf(l, "top")[0], ch = liftChange(l), lp = l.cards[0].pts[l.cards[0].pts.length - 1];
+        return '<button class="lrow" data-act="pg-lift" data-lift="' + esc(l.name) + '"><span><b>' + esc(l.name) + "</b><small>" + esc(l.cards[0].name) + " · " + plural(l.cards[0].pts.length, "session") + (l.cards.length > 1 ? " · +" + plural(l.cards.length - 1, "card") : "") + '</small></span><span class="v"><b>' + esc(lp.label) + '</b><small' + (ch.up ? ' class="up"' : "") + ">" + ch.html + "</small></span>" + (sr ? sparkSVG(sr.pts, l.kind === "assist") : "<span></span>") + "</button>"; }).join("") +
       '<p class="fine" style="margin-top:12px">Latest best set, and the change since the first log on the card the lift is done most on. Tap a lift to chart it.</p></section>';
-  }
+  } else h += usage;
   app.innerHTML = h + "</div>";
 }
 /* ---------- backup ---------- */
