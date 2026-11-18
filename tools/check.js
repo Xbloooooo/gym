@@ -5,7 +5,6 @@
 //   4. the fixed codes in tests/fixtures/ read back exactly as recorded, and survive being written again
 //   5. they still do with a plan removed, and with every plan removed
 //   6. every line of CARDS and LIFTS is used by a fixture: each line is changed in turn, and a fixture must notice
-// AGENTS.md says what each failure means.
 const vm = require('vm');
 const { load } = require('./page.js'), fixtures = require('./fixtures.js');
 const page = load();

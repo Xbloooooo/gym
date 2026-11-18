@@ -30,7 +30,7 @@ jobs:
           touched=$(git diff --name-status FETCH_HEAD HEAD -- tests/fixtures | grep -v '^A' | grep -v 'README\.md$' || true)
           if [ -n "$touched" ]; then
             echo "$touched"
-            echo "::error::This pull request changes or removes a fixture in tests/fixtures/. Fixtures are never edited: put them back and fix index.html instead (AGENTS.md, 'Save code 1.0')."
+            echo "::error::This pull request changes or removes a fixture in tests/fixtures/. Fixtures are never edited: put them back and fix index.html instead (tests/fixtures/README.md)."
             exit 1
           fi
           echo "no existing fixture was touched"

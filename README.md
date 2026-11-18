@@ -4,25 +4,40 @@ Phone-first workout logger. One page, no account, no server of ours: GitHub Page
 
 Live: https://xbloooooo.github.io/gym/
 
-## The phone it is built for
+## Built for a phone
 
-Howl's iPhone Air, in Safari: 420 × 912 CSS px at 3×, safe area 62 px top and 34 px bottom. Check every layout change
-at that size first (in Chrome: 420×912, DPR 3, safe-area insets 62/34). What the phone imposes:
+It is used one-handed, between sets, in the phone's browser or from the Home Screen. What phones impose on it:
 
 - every tap target is at least 44 px, and every text box is 16 px or more, or Safari zooms the page on focus;
 - the bar, the dock and the toast read `env(safe-area-inset-*)`; heights use `dvh`, since Safari's bars cover part of `vh`;
 - there is no vibration on iPhone and the beep is silent when the ringer switch is off, so the end of a rest has to be
   readable on the screen alone;
-- copying only works straight from a tap, so nothing slow may run between the tap and the copy.
+- copying and sharing only work straight from a tap, so nothing slow may run between the tap and the call.
+
+## Your own copy
+
+Fork the repo and switch on Pages for the fork (Settings → Pages → deploy from branch `main`, root). Your copy is
+then at `https://<you>.github.io/gym/`. It keeps its own log on your phone and shares nothing with any other copy.
+A save code from one copy can be added on another, because every copy writes the same format.
+
+The plans on main (Home, Office gym and EoS; Pull and Push at each) are the owner's, left in as examples. Put your
+own in `ROUTINES` (next section). There is no plan builder or importer in the page yet; a plan is written into the
+file by hand, or by an AI agent from a routine link, a screenshot or a description.
+
+To send a change back, open a pull request against `main`. Run `node tools/check.js` first, leave the `VERSION`
+line as it is (main bumps it when it merges), and leave `CARDS`, `LIFTS` and `tests/fixtures/` alone. GitHub runs
+the same check on every push and pull request; on a fork, once Actions is switched on in the fork's Actions tab.
 
 ## Changing the program
 
 Everything a session reads is at the top of the script in `index.html`:
 
-- `VERSION` — bump on every edit. It shows next to the wordmark, so a stale phone is obvious.
+- `VERSION` — shows next to the wordmark, so a stale phone is obvious. Main bumps it with every change it lands; a
+  pull request leaves it alone.
 - `TARGETS` — the "Due next" card on the home screen. Written by hand when a session is graded.
 - `LANES` — Home / Work / Day-pass. A routine belongs to a lane by its id prefix (`work_`, `eos_`, none = home).
-- `ROUTINES` — the cards. Same object shape as the design doc, so an existing `ROUTINES` array pastes straight in.
+- `ROUTINES` — the plans, one object per card: id, name, a one-line blurb, and its lifts, each with sets, rep
+  target, rest, log type (`LOG`) and the loads it opens with.
 - `CARDS`, `LIFTS` — numbered tables the save code uses in place of names. **Append only**: no line is ever
   reordered, removed, reused or edited, or codes already written down would name the wrong card or lift. A card
   that is taken off the page keeps its line, so its old workouts keep their name. A card or lift missing from the
@@ -31,8 +46,14 @@ Everything a session reads is at the top of the script in `index.html`:
 When open loads change, change the exercise (`defaultWeight`, `defaultReps`, `target`, `note`), the routine `blurb`
 and `TARGETS` in the same commit. Then:
 
-    node tools/check.js          # syntax, cards against the numbered tables, and the fixed codes in tests/fixtures/
+    node tools/check.js          # has to end with "all good"
     git commit -am "..." && git push
+
+The check makes sure that the script parses; that the cards agree with the numbered tables; that a code written from
+the cards reads back the same; that the codes in `tests/fixtures/`, which were written in the past, still read back
+as exactly the workouts recorded beside them, with every plan in place and with plans removed; and that every line
+of the two tables is used by one of those codes, so no line can move unnoticed. Those fixtures are never edited: if
+the check fails on one, the page is what has to change back.
 
 Pages republishes in about a minute. Pages caches for 10 minutes; reload the phone until the version matches.
 
@@ -109,8 +130,8 @@ on every row of the History list; finishing a session opens the new workout's pa
   parentheses for an assist pin), the best set marked. Three sets or fewer sit beside the name; more go on a line
   under it.
 - **Not on it**: lifts with nothing checked, the change tags, the note, the save code.
-- **Size**: 420 wide, as tall as it needs. Ten lifts of two or three sets come to about 815, inside one iPhone Air
-  screen; past 900 the rows tighten, and whatever the height, the picture is scaled to fit the screen.
+- **Size**: as tall as it needs. A day of ten lifts fits one phone screen without scrolling; a longer one tightens
+  its rows, and whatever the height, the picture is scaled to fit the screen.
 - **Sharing**: the card is drawn on a canvas at 3× in the theme's colours, light or dark as the page is, and handed
   to the phone's share sheet as a PNG (`navigator.share` with a file). It is drawn inside the tap with nothing
   awaited, because the sheet only opens straight from a tap. The card stays on screen behind the sheet.
@@ -142,8 +163,8 @@ one dot with "the line starts with the next one"; with none, the page says so an
 
 ## Where the log lives
 
-`localStorage["gym_tracker_v1"]` in that one browser, for the `xbloooooo.github.io` origin:
-`{ workouts, draft, theme, backup }`. Nothing is uploaded anywhere.
+`localStorage["gym_tracker_v1"]` in that one browser, for the site the page was opened from (each copy of the
+page has its own): `{ workouts, draft, theme, backup }`. Nothing is uploaded anywhere.
 
 - Safari on iPhone can clear a site's storage after seven days of browser use without a visit. A page added to the
   Home Screen is exempt, and has its own separate storage, so pick one way of opening it and stick to it.
@@ -247,11 +268,12 @@ what the page reads.
     manifest.webmanifest   name and icons for Add to Home Screen
     fonts/                 Barlow, Barlow Condensed (OFL 1.1), Cousine (Apache 2.0)
     ocr/                   tesseract.js 7.0.0, tesseract.js-core 7.0.0, English data (Apache 2.0); loaded only when an image is read
-    tools/check.js         the check to run before every push (what it checks: AGENTS.md)
+    tools/check.js         the check to run before every push (see "Changing the program")
     tools/fixtures.js      reads tests/fixtures/ for the check; on main, writes a new fixture for new table lines
     tests/fixtures/        fixed save codes and what they must read back as; never edited
     tools/decode.js        save code(s) → readable workouts
     tools/page.js          loads the cards and the save-code functions out of index.html for the two tools above
     tools/make_icons.py    redraws the icons
+    .github/workflows/     runs tools/check.js on every push and pull request
 
 No build step. Not offline: the page has to load from the network.

@@ -352,7 +352,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.18-3";
+const VERSION = "2026.11.18-4";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -494,7 +494,7 @@ const LOG = {
      - A renamed lift gets a new line; the old line stays, so old codes keep the old name.
      - A card or a lift that is not listed works everywhere all the same: its name is spelled out in the code, which
        only costs letters. A fork leaves these tables alone; main lists a plan when it merges it.
-   tests/fixtures/ holds codes written under these tables, and `node tools/check.js` reads them back (AGENTS.md). */
+   tests/fixtures/ holds codes written under these tables, and `node tools/check.js` reads them back. */
 const CARDS = [
   ["pull", "Home Pull"],                         // 1
   ["push", "Home Push"],
