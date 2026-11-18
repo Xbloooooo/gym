@@ -3,7 +3,8 @@
 //   2. the cards agree with the numbered tables the save code uses (CARDS, LIFTS)
 //   3. a save code written from the cards reads back the same, here in node as well as in the browser
 //   4. the fixed codes in tests/fixtures/ read back exactly as recorded, and survive being written again
-//   5. they still do with a plan removed, and with every plan removed
+//   5. they still do when the start screen is changed every way it can be: cards reordered, hidden, removed.
+//      The order of CARDS and LIFTS is the save code's numbering; what is shown, and in what order, is ROUTINES
 //   6. every line of CARDS and LIFTS is used by a fixture: each line is changed in turn, and a fixture must notice
 const vm = require('vm');
 const { load } = require('./page.js'), fixtures = require('./fixtures.js');
@@ -82,17 +83,35 @@ if (unlisted.length) console.log('  not listed (works, the code spells the name 
   if (!fx.length) FAIL('tests/fixtures/ has no codes. They are the only thing that notices a moved table line: restore them from git.');
   else if (!fail) console.log(`fixtures: ${fx.length} codes (${fx.map(f => f.name).join(', ')}), ${total} workouts read back exactly as recorded`);
 
-  // 5. Taking a plan off the page must not touch what old codes say, least of all the name of its workouts.
+  // 5. What the start screen shows is free to change: the order of ROUTINES, `hidden: true` on a card, a card deleted.
+  //    None of it may reach the save code. In each case every fixture must read back exactly, names included; CARDS
+  //    and LIFTS must be the same lines in the same order; and the start screen must be what the change asked for.
   if (fx.length) {
-    const live = ROUTINES.map(r => r.id).find(id => fx.some(f => f.want.some(w => w.routineId === id)));
-    const tries = (live ? [[[live], `plan removed (${live})`]] : []).concat([[true, 'every plan removed']]), said = [];
-    for (const [without, label] of tries) {
-      const pg = load({ without }); let bad = '';
+    const shown = pg => pg.startScreen().map(g => g.cards.map(r => r.id)), text = lanes => lanes.map(l => l.join(', ')).join(' | ') || 'no plans';
+    const tables = pg => JSON.stringify([pg.CARDS, pg.CARD_IDS, pg.LIFTS]), base = shown(page), all = base.flat();
+    const one = ROUTINES.map(r => r.id).find(id => fx.some(f => f.want.some(w => w.routineId === id))) || (ROUTINES[0] || {}).id;
+    const minus = id => base.map(l => l.filter(x => x !== id)).filter(l => l.length);
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    const inOrder = pg => { const at = id => pg.ROUTINES.findIndex(r => r.id === id); return shown(pg).every(l => l.every((id, i) => !i || at(l[i - 1]) < at(id))) && same(shown(pg).flat().sort(), [...all].sort()); };
+    const cases = [
+      ['display order reversed', { order: 'reverse' }, pg => same(shown(pg), base.map(l => [...l].reverse()))],
+      ['display order shuffled', { order: 'shuffle' }, inOrder],
+      ['gyms (LANES) reversed', { lanes: 'reverse' }, pg => same(shown(pg), [...base].reverse())],
+      ...(one ? [[`one plan hidden (${one})`, { hide: [one] }, pg => same(shown(pg), minus(one)) && pg.ROUTINES.length === ROUTINES.length]] : []),
+      ['every plan hidden', { hide: true }, pg => !shown(pg).length && pg.ROUTINES.length === ROUTINES.length],
+      ...(one ? [[`one plan removed (${one})`, { without: [one] }, pg => same(shown(pg), minus(one)) && pg.ROUTINES.length === ROUTINES.length - 1]] : []),
+      ['every plan removed', { without: true }, pg => !shown(pg).length && !pg.ROUTINES.length]
+    ], lines = [];
+    for (const [label, change, screenOk] of cases) {
+      const pg = load(change); let bad = '';
       for (const f of fx) { const d = await differs(pg, f); if (d && !bad) bad = `fixture ${f.name}: ${d}`; }
-      if (bad) FAIL(`${label}: ${bad}\n      Old workouts must read the same whether or not their card is still in ROUTINES. The save-code functions may only use CARDS and LIFTS.`);
-      else said.push(live && without !== true ? `${label}: its ${fx.reduce((n, f) => n + f.want.filter(w => w.routineId === live).length, 0)} old workouts still read "${fx.flatMap(f => f.want).find(w => w.routineId === live).name}"` : `${label}: all ${total} read the same`);
+      if (bad) { FAIL(`${label}: ${bad}\n      Old workouts must read the same however the cards are ordered, hidden or removed. The save-code functions may only use CARDS and LIFTS.`); continue; }
+      if (tables(pg) !== tables(page)) { FAIL(`${label}: CARDS or LIFTS came out different. Their order is the save code's numbering and must not follow ROUTINES in any way.`); continue; }
+      if (!screenOk(pg)) { FAIL(`${label}: the start screen shows "${text(shown(pg))}". It must show the cards of ROUTINES that are not hidden, lane by lane, in the order they are written.`); continue; }
+      const mine = one && label.includes(`(${one})`) ? fx.flatMap(f => f.want).filter(w => w.routineId === one) : [];
+      lines.push(`  ${label.padEnd(26)} start screen: ${text(shown(pg))}` + (mine.length ? `  ·  its ${mine.length} old workouts still read "${mine[0].name}"` : ''));
     }
-    if (said.length) console.log(said.join('; '));
+    if (lines.length === cases.length) console.log(`start screen changed ${cases.length} ways; each time all ${total} fixture workouts read back the same and CARDS and LIFTS did not move:\n  ${'as it is'.padEnd(26)} start screen: ${text(base)}\n` + lines.join('\n'));
   }
 
   // 6

@@ -352,7 +352,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.18-4";
+const VERSION = "2026.11.18-5";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -363,14 +363,25 @@ const TARGETS = {
 };
 
 // Lanes: different buildings, different machines. Pins never cross lanes.
+// The order of these lines is the order the gyms come in on the start screen, and it is free to change.
 const LANES = [
   { key: "home",    label: "Home",     venue: "Home",        prefix: "" },
   { key: "work",    label: "Work",     venue: "Office gym",  prefix: "work_" },
   { key: "daypass", label: "Day-pass", venue: "EoS",         prefix: "eos_" }
 ];
+// A card is in the lane whose prefix its id starts with (the longest, if two fit); otherwise in the lane with no prefix.
+function laneOf(id) { id = String(id || ""); return LANES.filter(l => l.prefix && id.startsWith(l.prefix)).sort((a, b) => b.prefix.length - a.prefix.length)[0] || LANES.find(l => !l.prefix) || LANES[0]; }
+const patternOf = id => String(id || "").slice(laneOf(id).prefix.length);
 
-/* Cards. Pull and Push in each lane for now; a lane shows up on the home screen once it has a card.
-   Ids still to come: legs, easy (home) · work_legs, work_easy.
+/* Cards. Pull and Push in each lane for now.
+   WHAT THE START SCREEN SHOWS is decided here and nowhere else, and is free to change at any time:
+     order    lane by lane in the order of LANES; inside a lane, the order the cards are written in below.
+              To move a card, move its object. To move a whole gym, move its line in LANES.
+     hidden   `hidden: true` on a card takes it off the start screen. That is all it does: its past workouts stay in
+              History, Progress and every save code, under its name. Hiding every card is fine; the start screen
+              then says that no plans are shown. Take the flag off and the card is back.
+   Neither touches CARDS and LIFTS further down. The order of those two is the save code's numbering and nothing
+   else; it is never the order anything is shown in.
    Rests that have worked: main row/press 120 · assisted pull-up 150 · face pull / rear delt 90
    · arms 75 · easy finisher 60. */
 const ROUTINES = [
@@ -475,6 +486,9 @@ const ROUTINES = [
   ]}
 ];
 
+// The start screen: the cards that are not hidden, grouped by lane. Lanes with nothing to show are left out.
+const startScreen = () => LANES.map(lane => ({ lane, cards: ROUTINES.filter(r => !r.hidden && laneOf(r.id) === lane) })).filter(g => g.cards.length);
+
 // Log law: what goes in the weight box.
 const LOG = {
   db:         ["Dumbbell",   "weight per hand, never the pair sum"],
@@ -489,6 +503,7 @@ const LOG = {
 /* Numbered tables the save code leans on: it writes a card or a lift as its line number here instead of its name.
    This is save code 1.0 and these lines are part of it. APPEND ONLY, and only on main: never reorder, delete, reuse
    or edit a line. Every code already written down would then name the wrong card or lift, with no error to say so.
+   The order here is the numbering, not the order anything is shown in: to reorder or hide cards, see ROUTINES.
      - A card taken out of ROUTINES keeps its line here: its old workouts are still called by the name beside its id.
      - An id and its name are one pair. A card that is renamed gets a new id and a new line; the old line stays.
      - A renamed lift gets a new line; the old line stays, so old codes keep the old name.
@@ -571,8 +586,6 @@ const restText = mmss;
 const doneSets = s => (s.exercises || []).reduce((n, e) => n + (e.sets || []).filter(x => x && x.done).length, 0);
 const allSets = s => (s.exercises || []).reduce((n, e) => n + (e.skipped ? 0 : (e.sets || []).length), 0);
 const minutes = s => { const a = Date.parse(s.startedAt), b = Date.parse(s.finishedAt); return isNaN(a) || isNaN(b) ? null : Math.max(1, Math.round((b - a) / 60000)); };
-function laneOf(id) { id = String(id || ""); return LANES.find(l => l.prefix && id.startsWith(l.prefix)) || LANES[0]; }
-const patternOf = id => String(id || "").slice(laneOf(id).prefix.length);
 const routine = id => ROUTINES.find(r => r.id === id);
 
 let toastT;
@@ -830,7 +843,7 @@ function render() {
 
 /* ---------- home ---------- */
 function viewHome() {
-  const due = routine(TARGETS.due);
+  const shown = startScreen(), due = shown.flatMap(g => g.cards).find(r => r.id === TARGETS.due);
   let h = '<div class="view"><header class="top"><div class="mark"><b>GYM<i>.</i></b><span>v' + esc(VERSION) + '</span></div>' +
     '<button class="theme" data-act="theme" aria-label="Switch theme">' + (S.theme === "stealth" ? "Default" : "Stealth") + "</button></header>";
 
@@ -839,20 +852,23 @@ function viewHome() {
       " · " + doneSets(S.draft) + " of " + allSets(S.draft) + ' sets checked</p><div class="row2"><button class="btn ink" data-act="resume">Resume</button><button class="btn quiet danger" data-act="discard">Discard</button></div></section>';
   }
 
-  h += '<section class="card due"><div class="caps"><span>Due next</span>' + (TARGETS.updated ? "<span>set " + esc(TARGETS.updated) + "</span>" : "") + "</div>";
-  if (due) {
-    h += "<h2>" + esc(due.name) + '</h2><div class="venue">' + esc(TARGETS.venue || laneOf(due.id).venue) + "</div>";
-    if (TARGETS.loads && TARGETS.loads.length) h += "<ul>" + TARGETS.loads.map(l => Array.isArray(l) ? "<li><span>" + esc(l[0]) + "</span><b>" + esc(l[1]) + "</b></li>" : "<li><span>" + esc(l) + "</span></li>").join("") + "</ul>";
-    else h += '<p class="unset">No open loads written for this card.</p><div style="height:14px"></div>';
-    h += '<button class="btn primary" data-act="start" data-id="' + esc(due.id) + '">Start ' + esc(due.name) + "</button>";
+  if (!shown.length) {
+    // every plan hidden, or none in this copy: say so calmly; everything that does not need a plan is still below
+    h += '<section class="card due"><div class="caps"><span>No plans shown</span></div><p class="unset">No workout plan is shown on this copy of the page, so there is nothing to start. History, Progress and Backup work as usual.</p></section>';
   } else {
-    h += '<p class="unset">Nothing is marked due yet. The due card is written when a session is graded — pick a card below.</p>';
+    h += '<section class="card due"><div class="caps"><span>Due next</span>' + (TARGETS.updated ? "<span>set " + esc(TARGETS.updated) + "</span>" : "") + "</div>";
+    if (due) {
+      h += "<h2>" + esc(due.name) + '</h2><div class="venue">' + esc(TARGETS.venue || laneOf(due.id).venue) + "</div>";
+      if (TARGETS.loads && TARGETS.loads.length) h += "<ul>" + TARGETS.loads.map(l => Array.isArray(l) ? "<li><span>" + esc(l[0]) + "</span><b>" + esc(l[1]) + "</b></li>" : "<li><span>" + esc(l) + "</span></li>").join("") + "</ul>";
+      else h += '<p class="unset">No open loads written for this card.</p><div style="height:14px"></div>';
+      h += '<button class="btn primary" data-act="start" data-id="' + esc(due.id) + '">Start ' + esc(due.name) + "</button>";
+    } else {
+      h += '<p class="unset">Nothing is marked due yet. The due card is written when a session is graded — pick a card below.</p>';
+    }
+    h += "</section>";
   }
-  h += "</section>";
 
-  for (const lane of LANES) {
-    const list = ROUTINES.filter(r => laneOf(r.id) === lane);
-    if (!list.length) continue;
+  for (const { lane, cards: list } of shown) {
     h += '<section class="lane"><div class="lane-h"><h3>' + esc(lane.label) + "</h3><span>" + esc(lane.venue === lane.label ? list.length + " cards" : lane.venue) + "</span></div>";
     for (const r of list) {
       h += '<button class="rt" data-act="start" data-id="' + esc(r.id) + '"><span><b>' + esc(r.name) + "</b><small>" + esc(r.blurb || "") + '</small></span><span class="go">' +
@@ -1177,7 +1193,7 @@ function sparkSVG(pts, flip) {
 }
 const histTabs = on => '<nav class="tabs"><a href="#/history"' + (on === "log" ? ' class="on" aria-current="page"' : "") + '>Log</a><a href="#/progress"' + (on === "progress" ? ' class="on" aria-current="page"' : "") + ">Progress</a></nav>";
 function viewProgress() {
-  const lanes = LANES.filter(l => ROUTINES.some(r => laneOf(r.id).key === l.key) || S.workouts.some(w => laneOf(w.routineId).key === l.key));
+  const lanes = LANES.filter(l => ROUTINES.some(r => !r.hidden && laneOf(r.id).key === l.key) || S.workouts.some(w => laneOf(w.routineId).key === l.key));
   if (PG.lane !== "all" && !lanes.some(l => l.key === PG.lane)) PG.lane = "all";
   const D = progressData(PG.lane), cal = calendarSVG(D.ws, D.now), bars = weekBarsSVG(D.ws, D.now), where = PG.lane === "all" ? "" : " at " + (lanes.find(l => l.key === PG.lane).venue || "this gym");
   const first = D.ws.length ? Math.min(...D.ws.map(w => Date.parse(w.startedAt))) : D.now, span = Math.min(4, Math.max(1, Math.ceil((D.now - mondayOf(first) + 1) / (7 * DAY))));

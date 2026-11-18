@@ -20,8 +20,8 @@ Fork the repo and switch on Pages for the fork (Settings → Pages → deploy fr
 then at `https://<you>.github.io/gym/`. It keeps its own log on your phone and shares nothing with any other copy.
 A save code from one copy can be added on another, because every copy writes the same format.
 
-The plans on main (Home, Office gym and EoS; Pull and Push at each) are the owner's, left in as examples. Put your
-own in `ROUTINES` (next section). There is no plan builder or importer in the page yet; a plan is written into the
+The plans on main (Home, Office gym and EoS; Pull and Push at each) are the owner's, left in as examples. Hide them
+with `hidden: true` or delete them, and put your own in `ROUTINES` (next section). There is no plan builder or importer in the page yet; a plan is written into the
 file by hand, or by an AI agent from a routine link, a screenshot or a description.
 
 To send a change back, open a pull request against `main`. Run `node tools/check.js` first, leave the `VERSION`
@@ -35,10 +35,17 @@ Everything a session reads is at the top of the script in `index.html`:
 - `VERSION` — shows next to the wordmark, so a stale phone is obvious. Main bumps it with every change it lands; a
   pull request leaves it alone.
 - `TARGETS` — the "Due next" card on the home screen. Written by hand when a session is graded.
-- `LANES` — Home / Work / Day-pass. A routine belongs to a lane by its id prefix (`work_`, `eos_`, none = home).
+- `LANES` — the gyms: Home / Work / Day-pass. A plan belongs to a lane by its id prefix (`work_`, `eos_`, none =
+  home).
 - `ROUTINES` — the plans, one object per card: id, name, a one-line blurb, and its lifts, each with sets, rep
   target, rest, log type (`LOG`) and the loads it opens with.
-- `CARDS`, `LIFTS` — numbered tables the save code uses in place of names. **Append only**: no line is ever
+- **What the start screen shows** is set by those two and nothing else. The gyms come in the order of `LANES`, and
+  inside a gym the plans come in the order they are written in `ROUTINES`: to move one, move it. `hidden: true` on
+  a plan takes it off the start screen and does nothing else; its past workouts stay in History, Progress and every
+  save code, under its name. Any plan can be hidden, and all of them: the start screen then says no plans are shown,
+  and History, Progress, sharing and adding codes go on working.
+- `CARDS`, `LIFTS` — numbered tables the save code uses in place of names. Their order is that numbering and
+  nothing else; it is never the order anything is shown in. **Append only**: no line is ever
   reordered, removed, reused or edited, or codes already written down would name the wrong card or lift. A card
   that is taken off the page keeps its line, so its old workouts keep their name. A card or lift missing from the
   tables still works; its name is spelled out in the code.
@@ -51,8 +58,9 @@ and `TARGETS` in the same commit. Then:
 
 The check makes sure that the script parses; that the cards agree with the numbered tables; that a code written from
 the cards reads back the same; that the codes in `tests/fixtures/`, which were written in the past, still read back
-as exactly the workouts recorded beside them, with every plan in place and with plans removed; and that every line
-of the two tables is used by one of those codes, so no line can move unnoticed. Those fixtures are never edited: if
+as exactly the workouts recorded beside them, however the start screen is changed (plans and gyms reordered, one
+plan hidden, all hidden, one removed, all removed); and that every line of the two tables is used by one of those
+codes, so no line can move unnoticed. Those fixtures are never edited: if
 the check fails on one, the page is what has to change back.
 
 Pages republishes in about a minute. Pages caches for 10 minutes; reload the phone until the version matches.
