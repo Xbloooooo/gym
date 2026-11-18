@@ -339,7 +339,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-19";
+const VERSION = "2026.11.17-20";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -901,7 +901,6 @@ function viewHistory() {
 /* A logged workout, laid out to be read at a glance: when, where, how long; lifts, sets and volume; then a card per
    lift with its sets, the best one marked, and what changed since the last time that lift was done on this card.
    Lifts with nothing checked are folded into one line. */
-const KIND = { db: "both hands", assist: "lower pin is harder" };
 function liftDelta(e, done, w, i) {
   let prev = null;
   for (let k = i - 1; k >= 0 && !prev; k--) {
@@ -930,9 +929,9 @@ function viewWorkout(i) {
     (str(w.note) ? '<p class="wk-note">' + esc(str(w.note)) + "</p>" : "");
   if (!did.length) h += '<p class="empty">No sets were checked in this workout.</p>';
   did.forEach((l, n) => {
-    const e = l.e, dl = liftDelta(e, l.done, w, i), top = l.done.length > 1 ? topSet(e, l.done) : -1, lv = liftVolume(e);
+    const e = l.e, dl = liftDelta(e, l.done, w, i), top = l.done.length > 1 ? topSet(e, l.done) : -1;
     h += '<section class="wk-lift"><div class="wk-lh"><span class="wk-n">' + pad2(n + 1) + "</span><h2>" + esc(e.name) + '</h2><span class="wk-delta' + (dl.up ? " up" : "") + '">' + dl.html + "</span></div>" +
-      '<p class="wk-kind">' + (LOG[e.log] ? '<span class="tag">' + LOG[e.log][0] + "</span>" : "") + "<span>" + [lv ? lbs(lv) + " lb" : "", KIND[e.log]].filter(Boolean).join(" · ") + "</span></p>" +
+      (LOG[e.log] ? '<p class="wk-kind"><span class="tag">' + LOG[e.log][0] + "</span></p>" : "") +     // the gear, and nothing else: total weight is said once, in the strip at the top
       '<div class="wk-sets">' + l.done.map((x, k) => { const v = esc(str(x.w)), wk = v ? wKind(e, x.w) : "bw";
         return '<div class="wt ' + wk + (k === top ? " best" : "") + '">' + (wk === "blk" ? blockSVG(100, 66) : "") + "<b>" + (wk === "db" && v ? dbSVG("l") + "<i>" + v + "</i>" + dbSVG("r") : "<i>" + esc(wText(e, x.w)) + "</i>") + "</b><span>× " + esc(str(x.r) || "—") + "</span></div>"; }).join("") + "</div></section>";
   });

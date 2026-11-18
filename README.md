@@ -83,8 +83,9 @@ All of it is inline SVG in the theme's colours (`dbSVG`, `blockSVG`, `UNIT` in `
 
 History → a workout. Weekday, gym and date, start–finish and minutes, then three numbers: lifts done out of the
 card's total, sets, and volume. Under that the session note, then one card per lift that has checked sets: an
-equipment pill, the lift's volume, and its sets as weight × reps tiles, three to a row, with the best set marked
-(heaviest, then most reps; on an assisted lift the lowest pin). Lifts with nothing checked are folded into one "Skipped" line.
+equipment pill and its sets as weight × reps tiles, three to a row, with the best set marked (heaviest, then most
+reps; on an assisted lift the lowest pin). A lift card shows no total: the session's volume in the strip at the top
+is the only total weight on the page, because a total beside the sets read as one more set weight. Lifts with nothing checked are folded into one "Skipped" line.
 The History list shows sets and volume per workout.
 
 **Volume** is weight × reps over checked sets. A dumbbell lift is logged per hand and counts both hands (40 × 8 is
