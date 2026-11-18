@@ -1,0 +1,36 @@
+# The same check an agent runs before pushing, run by GitHub on every push to any branch and on every pull request,
+# pull requests from forks included. Nothing to install: the check needs only node, which the runner has.
+# A fork runs this too, once its owner has switched Actions on for the fork (Actions tab, one button).
+name: check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: node tools/check.js
+        run: node --version && node tools/check.js
+
+      # tests/fixtures/ holds save codes that exist on phones and on paper. A pull request may add a fixture; one that
+      # edits or deletes a fixture is hiding a break in the save code, however green the check above is.
+      - name: Fixtures are only ever added
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA"
+          touched=$(git diff --name-status FETCH_HEAD HEAD -- tests/fixtures | grep -v '^A' | grep -v 'README\.md$' || true)
+          if [ -n "$touched" ]; then
+            echo "$touched"
+            echo "::error::This pull request changes or removes a fixture in tests/fixtures/. Fixtures are never edited: put them back and fix index.html instead (AGENTS.md, 'Save code 1.0')."
+            exit 1
+          fi
+          echo "no existing fixture was touched"
