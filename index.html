@@ -202,6 +202,9 @@ h1,h2,h3,p{margin:0}
 
 /* ---------- history ---------- */
 .hrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;width:100%;min-height:70px;padding:13px 2px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left}
+.hrow-w{display:grid;grid-template-columns:1fr 46px;align-items:center;border-bottom:1px solid var(--line)}
+.hrow-w .hrow{border-bottom:0}
+.hshare{display:grid;place-items:center;width:46px;height:46px;margin-right:-6px;border:0;border-radius:12px;background:none;color:var(--muted)}
 .hrow b{display:block;font:600 23px/1.05 var(--cond);letter-spacing:.02em;text-transform:uppercase}
 .hrow small{display:block;margin-top:4px;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
 .hrow .n{font:700 22px/1 var(--cond);font-variant-numeric:tabular-nums;text-align:right}
@@ -247,6 +250,16 @@ h1,h2,h3,p{margin:0}
 .wk-sets .blk.best span{color:var(--bg);opacity:.72}
 .wk-rest{margin:18px 2px 0;font-size:14.5px;line-height:1.55;color:var(--muted)}
 .wk-rest b{display:block;margin-bottom:5px}
+.bar .act{justify-self:end;display:flex;align-items:center;gap:5px;min-height:44px;padding:0 4px 0 6px;border:0;background:none;font:600 16px var(--body);color:var(--ink)}
+/* ---------- share card: the picture, as large as the screen allows, on the page's own background ---------- */
+html.sharing,html.sharing body{overflow:hidden}
+#share{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;gap:10px;padding:calc(6px + env(safe-area-inset-top)) 0 calc(12px + env(safe-area-inset-bottom));background:var(--bg)}
+#share .pic{flex:1 1 0;min-height:0;cursor:pointer}
+#share img{display:block;width:100%;height:100%;object-fit:contain;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}
+#share .share-ui{padding:0 16px}
+#share .share-ui .fine{margin:0 4px 10px;text-align:center}
+#share.bare .share-ui{display:none}
+html.sharing #toast{z-index:50;bottom:calc(110px + env(safe-area-inset-bottom))}
 /* ---------- progress ---------- */
 .tabs{display:grid;grid-template-columns:1fr 1fr;margin-top:16px;border:1.5px solid var(--ink);border-radius:12px;overflow:hidden}
 .tabs a{display:grid;place-items:center;min-height:44px;font:700 15px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;text-decoration:none;color:var(--ink)}
@@ -339,7 +352,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-20";
+const VERSION = "2026.11.17-21";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -563,6 +576,7 @@ function selectNode(el) { try { const r = document.createRange(); r.selectNodeCo
 const ICON = {
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   chev: '<svg width="10" height="16" viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2l6 6-6 6"/></svg>',
+  share: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></svg>',
   back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>'
 };
 
@@ -611,13 +625,18 @@ function stepFor(e, v, dir) {
      bodyweight / no number   nothing
    Display only. Nothing here touches what is stored or what goes into a save code. */
 const wKind = (e, w) => e.log === "assist" ? "ast" : e.log === "db" ? "db" : e.log === "bodyweight" || !e.log ? (str(w) ? "blk" : "bw") : "blk";
-const DB_RECTS = '<rect y="3" width="3.4" height="6" rx="1.2"/><rect x="4" width="4" height="12" rx="1.6"/><rect x="8" y="4.6" width="6" height="2.8"/><rect x="14" width="4" height="12" rx="1.6"/><rect x="18.6" y="3" width="3.4" height="6" rx="1.2"/>';
+const DB_BOX = [[0, 3, 3.4, 6, 1.2], [4, 0, 4, 12, 1.6], [8, 4.6, 6, 2.8, 0], [14, 0, 4, 12, 1.6], [18.6, 3, 3.4, 6, 1.2]];      // x, y, w, h, corner: a dumbbell 22 by 12
+const DB_RECTS = DB_BOX.map(b => '<rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + b[3] + '" rx="' + b[4] + '"/>').join("");
 const dbSVG = side => '<svg class="dbg ' + side + '" viewBox="0 0 22 12" aria-hidden="true">' + DB_RECTS + "</svg>";
 // A weight block W wide and H tall: a trapezoid with soft corners and a handle loop on top. Stretches to its box.
-function blockSVG(W, H) {
+function blockPaths(W, H) {
   const t = 8, s = Math.round(W * .07), c = W / 2;
-  return '<svg class="wblk" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true"><path class="wb-h" d="M' + (c - 11) + " " + (t + 1) + "V7Q" + (c - 11) + " 1.8 " + (c - 5.5) + " 1.8H" + (c + 5.5) + "Q" + (c + 11) + " 1.8 " + (c + 11) + " 7V" + (t + 1) + '"/>' +
-    '<path class="wb-b" d="M' + (s + 8) + " " + t + "H" + (W - s - 8) + "Q" + (W - s - 1) + " " + t + " " + (W - s + .4) + " " + (t + 7) + "L" + (W - 1.6) + " " + (H - 9) + "Q" + (W - .6) + " " + (H - 1) + " " + (W - 9) + " " + (H - 1) + "H9Q.6 " + (H - 1) + " 1.6 " + (H - 9) + "L" + (s - .4) + " " + (t + 7) + "Q" + (s + 1) + " " + t + " " + (s + 8) + " " + t + 'Z"/></svg>';
+  return ["M" + (c - 11) + " " + (t + 1) + "V7Q" + (c - 11) + " 1.8 " + (c - 5.5) + " 1.8H" + (c + 5.5) + "Q" + (c + 11) + " 1.8 " + (c + 11) + " 7V" + (t + 1),
+    "M" + (s + 8) + " " + t + "H" + (W - s - 8) + "Q" + (W - s - 1) + " " + t + " " + (W - s + .4) + " " + (t + 7) + "L" + (W - 1.6) + " " + (H - 9) + "Q" + (W - .6) + " " + (H - 1) + " " + (W - 9) + " " + (H - 1) + "H9Q.6 " + (H - 1) + " 1.6 " + (H - 9) + "L" + (s - .4) + " " + (t + 7) + "Q" + (s + 1) + " " + t + " " + (s + 8) + " " + t + "Z"];
+}
+function blockSVG(W, H) {
+  const [handle, body] = blockPaths(W, H);
+  return '<svg class="wblk" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true"><path class="wb-h" d="' + handle + '"/><path class="wb-b" d="' + body + '"/></svg>';
 }
 // The same two marks at letter size, for a change like "+5".
 const UNIT = { db: '<svg class="ug db" viewBox="0 0 22 12" role="img" aria-label="per hand">' + DB_RECTS + "</svg>",
@@ -715,7 +734,7 @@ async function finish() {
   // straight from the tap. No plain-text summary is produced; tools/decode.js reads a code.
   let sv = null; try { sv = buildCode(S.workouts); } catch (e) {}
   const ok = sv ? await copyText(sv.text) : false;
-  if (ok) { markBackup(); go("#/"); toast("Saved · save code copied (" + plural(S.workouts.length, "workout") + ")"); }
+  if (ok) { markBackup(); go("#/history/" + (S.workouts.length - 1)); toast("Saved · save code copied (" + plural(S.workouts.length, "workout") + ")"); }
   else { go("#/backup"); toast(sv ? "Saved. Copy failed — the code is selected, copy it by hand." : "Saved, but the save code could not be built.", 6000); setTimeout(() => { const el = $("#save-text"); if (el && sv) selectNode(el); }, 300); }
 }
 
@@ -777,6 +796,7 @@ function go(hash) { if (location.hash === hash || (hash === "#/" && !location.ha
 window.addEventListener("hashchange", render);
 
 function render() {
+  closeShare();
   const h = location.hash.replace(/^#\/?/, ""), parts = h.split("/");
   const prev = view;
   view = parts[0] === "session" && S.draft ? "session" : parts[0] === "history" ? "history" : parts[0] === "backup" ? "backup" : parts[0] === "progress" ? "progress" : "home";
@@ -892,11 +912,12 @@ function viewHistory() {
   if (!S.workouts.length) h += '<p class="empty">No workouts saved on this phone yet.</p>';
   for (let i = S.workouts.length - 1; i >= 0; i--) {
     const w = S.workouts[i], m = minutes(w), v = volume(w);
-    h += '<button class="hrow" data-act="open" data-i="' + i + '"><span><b>' + esc(w.name || "Workout") + "</b><small>" + esc(day(w.startedAt)) + " · " + hm(w.startedAt) + (m ? " · " + m + " min" : "") +
-      '</small></span><span class="n">' + doneSets(w) + " <i>sets</i>" + (v ? "<small>" + lbs(v) + " lb</small>" : "") + "</span></button>";
+    h += '<div class="hrow-w"><button class="hrow" data-act="open" data-i="' + i + '"><span><b>' + esc(w.name || "Workout") + "</b><small>" + esc(day(w.startedAt)) + " · " + hm(w.startedAt) + (m ? " · " + m + " min" : "") +
+      '</small></span><span class="n">' + doneSets(w) + " <i>sets</i>" + (v ? "<small>" + lbs(v) + " lb</small>" : "") + '</span></button><button class="hshare" data-act="share" data-i="' + i + '" aria-label="Share card: ' + esc(w.name || "Workout") + ", " + esc(day(w.startedAt)) + '">' + ICON.share + "</button></div>";
   }
   h += '<div class="sec"><a class="btn quiet" href="#/backup" style="text-decoration:none">Backup &amp; restore</a></div></div>';
   app.innerHTML = h;
+  warmCardFonts();
 }
 /* A logged workout, laid out to be read at a glance: when, where, how long; lifts, sets and volume; then a card per
    lift with its sets, the best one marked, and what changed since the last time that lift was done on this card.
@@ -921,7 +942,7 @@ function viewWorkout(i) {
   if (!w) return go("#/history");
   const m = minutes(w), d = new Date(w.startedAt), ok = !isNaN(d), lane = laneOf(w.routineId), v = volume(w);
   const lifts = (w.exercises || []).map(e => ({ e, done: e.skipped ? [] : (e.sets || []).filter(x => x && x.done) })), did = lifts.filter(l => l.done.length), not = lifts.filter(l => !l.done.length);
-  let h = '<div class="view"><div class="bar"><button class="back" data-act="history">' + ICON.back + 'History</button><h1>' + esc(w.name || "Workout") + '</h1><span class="side"></span></div>' +
+  let h = '<div class="view"><div class="bar"><button class="back" data-act="history">' + ICON.back + 'History</button><h1>' + esc(w.name || "Workout") + '</h1><button class="act" data-act="share" data-i="' + i + '">Share' + ICON.share + "</button></div>" +
     '<header class="wk-head"><p class="wk-eye">' + esc((ok ? d.toLocaleDateString(undefined, { weekday: "long" }) + " · " : "") + lane.label + (lane.venue && lane.venue !== lane.label ? " · " + lane.venue : "")) + "</p>" +
     '<p class="wk-date">' + esc(ok ? d.toLocaleDateString(undefined, { month: "long", day: "numeric" }) : "Undated") + "</p>" +
     '<p class="wk-time">' + (ok ? hm(w.startedAt) + (w.finishedAt ? " – " + hm(w.finishedAt) : "") + (m ? " · " + m + " min" : "") + (d.getFullYear() !== new Date().getFullYear() ? " · " + d.getFullYear() : "") : "") + "</p></header>" +
@@ -936,7 +957,112 @@ function viewWorkout(i) {
         return '<div class="wt ' + wk + (k === top ? " best" : "") + '">' + (wk === "blk" ? blockSVG(100, 66) : "") + "<b>" + (wk === "db" && v ? dbSVG("l") + "<i>" + v + "</i>" + dbSVG("r") : "<i>" + esc(wText(e, x.w)) + "</i>") + "</b><span>× " + esc(str(x.r) || "—") + "</span></div>"; }).join("") + "</div></section>";
   });
   if (not.length && did.length) h += '<p class="wk-rest"><b>Skipped</b>' + not.map(l => esc(l.e.name)).join(", ") + "</p>";
-  app.innerHTML = h + '<div class="sec"><button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
+  app.innerHTML = h + '<div class="sec stack"><button class="btn ink" data-act="share" data-i="' + i + '">' + ICON.share + 'Share card</button><button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
+  warmCardFonts();
+}
+
+/* ---------- share card ----------
+   One picture of one workout, made to be sent to someone: date, gym, name, minutes, sets and volume, then a line
+   per lift with its sets as small tiles carrying the same marks as the page (dumbbells for per hand, a weight block,
+   parentheses for an assist pin). Lifts with nothing checked, the change tags and the save code stay off it.
+   It is drawn on a canvas, not built from the page's HTML, because an iPhone will not turn HTML into an image. The
+   drawing is done in one go inside the tap, with nothing awaited, so the share sheet is allowed to open.
+   A workout of ten lifts with three sets each comes to about one phone screen; a longer one tightens its rows. */
+const CARD = { W: 420, PAD: 26, K: 3, TW: 58, TG: 6, cond: '"Barlow Condensed","Arial Narrow",system-ui,sans-serif', body: '"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif' };
+const CARD_FONTS = ['700 40px "Barlow Condensed"', '600 17px "Barlow Condensed"', '500 11px "Barlow"'];
+const warmCardFonts = () => { try { CARD_FONTS.forEach(f => document.fonts.load(f)); } catch (e) {} };
+function drawShareCard(w) {
+  const cs = getComputedStyle(document.documentElement), col = n => cs.getPropertyValue("--" + n).trim(), dark = S.theme === "stealth";
+  const C = { bg: col("bg"), raised: col("raised"), ink: col("ink"), muted: col("muted"), faint: col("faint"), line: dark ? col("faint") : col("line"), accent: col("accent") };
+  const { W, PAD, K, TW, TG } = CARD, inner = W - 2 * PAD, cv = document.createElement("canvas"), g = cv.getContext("2d");
+  const native = "letterSpacing" in g; let gap = 0;
+  const font = (f, ls) => { g.font = f; gap = ls || 0; if (native) g.letterSpacing = gap + "px"; }, width = t => g.measureText(t).width + (native ? 0 : gap * t.length);
+  const put = (t, x, y) => { if (native || gap < 1) return g.fillText(t, x, y); for (const ch of t) { g.fillText(ch, x, y); x += g.measureText(ch).width + gap; } };       // left-aligned labels only
+  const lifts = (w.exercises || []).map(e => ({ e, done: e.skipped ? [] : (e.sets || []).filter(x => x && x.done) })).filter(l => l.done.length);
+  const d = new Date(w.startedAt), ok = !isNaN(d), lane = laneOf(w.routineId), m = minutes(w), v = volume(w), per = Math.floor((inner + TG) / (TW + TG));
+  // lay it out: three sets or fewer sit beside the name, more go on their own line under it
+  const NAME = "700 17px " + CARD.cond, wrap = (text, max) => {
+    font(NAME, .3); const words = text.split(" "), lines = [""];
+    for (const word of words) { const t = lines[lines.length - 1] ? lines[lines.length - 1] + " " + word : word; if (width(t) <= max || !lines[lines.length - 1]) lines[lines.length - 1] = t; else lines.push(word); }
+    if (lines.length > 2) { lines.length = 2; while (width(lines[1] + "…") > max && lines[1].length > 1) lines[1] = lines[1].slice(0, -1); lines[1] += "…"; }
+    return lines;
+  };
+  const plan = dense => { const TH = dense ? 38 : 42, RP = dense ? 6 : 9, LH = 19; let y = 0;
+    const rows = lifts.map(l => { const n = l.done.length, beside = n <= 3, tw = n * TW + (n - 1) * TG, lines = wrap(l.e.name.toUpperCase(), beside ? inner - tw - 14 : inner), tr = beside ? 1 : Math.ceil(n / per);
+      const h = beside ? Math.max(TH, lines.length * LH) : lines.length * LH + 7 + tr * TH + (tr - 1) * TG, r = { l, beside, lines, h, y, top: n > 1 ? topSet(l.e, l.done) : -1 }; y += h + 2 * RP + 1; return r; });
+    return { rows, TH, RP, LH, body: y };
+  };
+  let P = plan(false); const HEAD = 132, FOOT = 46; if (PAD + HEAD + P.body + FOOT > 900) P = plan(true);
+  const H = Math.round(PAD + HEAD + P.body + FOOT);
+  cv.width = W * K; cv.height = H * K; g.scale(K, K); g.fillStyle = C.bg; g.fillRect(0, 0, W, H); g.textBaseline = "alphabetic";
+  // header
+  let y = PAD + 11;
+  font("600 12px " + CARD.cond, 1.9); g.fillStyle = C.muted;
+  put([ok ? d.toLocaleDateString(undefined, { weekday: "long" }) : "", ok ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + (d.getFullYear() !== new Date().getFullYear() ? " " + d.getFullYear() : "") : "", lane.venue || lane.label].filter(Boolean).join("  ·  ").toUpperCase(), PAD, y);
+  const title = (w.name || "Workout").toUpperCase(); let ts = 46; do { font("700 " + ts + "px " + CARD.cond, .4); } while (width(title) > inner && --ts > 24);
+  y += 12 + ts * .76; g.fillStyle = C.ink; g.fillText(title, PAD - 1, y);
+  y = PAD + 100; let x = PAD;
+  for (const [val, lab] of [[m ? String(m) : "", "MIN"], [String(doneSets(w)), doneSets(w) === 1 ? "SET" : "SETS"], [v ? lbs(v) : "", "LB"]]) { if (!val) continue;
+    font("700 27px " + CARD.cond, .2); g.fillStyle = C.ink; g.fillText(val, x, y); x += width(val) + 5;
+    font("600 11.5px " + CARD.cond, 1.7); g.fillStyle = C.muted; put(lab, x, y); x += width(lab) + 20; }
+  y = PAD + 116; g.fillStyle = C.ink; g.fillRect(PAD, y, inner, 2);
+  // one small tile per set
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  const bell = (cx, cy, s, a, c) => { g.save(); g.translate(cx, cy); g.rotate(a); g.scale(s, s); g.fillStyle = c; for (const [bx, by, bw, bh, br] of DB_BOX) { rr(bx - 11, by - 6, bw, bh, br); g.fill(); } g.restore(); };
+  const tile = (x, y, e, set, best, TH) => {
+    const wv = str(set.w), kind = wv ? wKind(e, wv) : "bw", txt = wText(e, set.w), fg = best && kind === "blk" ? C.bg : C.ink, mid = x + TW / 2;
+    if (kind === "blk") { const [hd, bd] = blockPaths(TW, TH); g.save(); g.translate(x, y); g.lineWidth = 2.6; g.strokeStyle = best ? C.ink : C.line; g.stroke(new Path2D(hd));
+      g.lineWidth = 1.5; g.lineJoin = "round"; if (best) { g.fillStyle = C.ink; g.fill(new Path2D(bd)); } g.stroke(new Path2D(bd)); g.restore(); }
+    else { rr(x + .75, y + .75, TW - 1.5, TH - 1.5, 9); if (best) { g.fillStyle = C.raised; g.fill(); } g.lineWidth = 1.5; g.strokeStyle = best ? C.ink : C.line; g.stroke(); }
+    const top = kind === "blk" ? y + 8 : y, hh = TH - (kind === "blk" ? 8 : 0); let fs = 17; g.textAlign = "center";
+    do { font("600 " + fs + "px " + CARD.cond, .2); } while (width(txt) > TW - (kind === "db" ? 30 : 12) && --fs > 11);
+    const base = top + hh * .5 + (kind === "blk" ? -1.5 : 1);
+    g.fillStyle = fg; g.fillText(txt, mid, base);
+    if (kind === "db") { const half = width(txt) / 2 + 7; bell(mid - half, base - 6, .52, -1.01, best ? C.ink : C.faint); bell(mid + half, base - 6, .52, 1.01, best ? C.ink : C.faint); }
+    font("500 11px " + CARD.body, 0); g.fillStyle = best && kind === "blk" ? C.bg : C.muted; g.globalAlpha = best && kind === "blk" ? .78 : 1; g.fillText("× " + (str(set.r) || "—"), mid, base + (kind === "blk" ? 12.5 : 13.5)); g.globalAlpha = 1; g.textAlign = "left";
+  };
+  let y0 = PAD + HEAD;
+  P.rows.forEach((r, k) => {
+    const top = y0 + r.y + P.RP;
+    if (k) { g.fillStyle = dark ? col("line") : C.line; g.fillRect(PAD, y0 + r.y - .5, inner, 1); }
+    font(NAME, .3); g.fillStyle = C.ink;
+    const ty = r.beside ? top + (r.h - r.lines.length * P.LH) / 2 : top; r.lines.forEach((t, i) => g.fillText(t, PAD, ty + 14 + i * P.LH));
+    r.l.done.forEach((set, i) => { const n = r.l.done.length;
+      const tx = r.beside ? W - PAD - (n - i) * TW - (n - 1 - i) * TG : PAD + (i % per) * (TW + TG), tyy = r.beside ? top + (r.h - P.TH) / 2 : top + r.lines.length * P.LH + 7 + Math.floor(i / per) * (P.TH + TG);
+      tile(tx, tyy, r.l.e, set, i === r.top, P.TH); });
+  });
+  if (!lifts.length) { font("400 15px " + CARD.body, 0); g.fillStyle = C.muted; g.fillText("No sets were checked.", PAD, y0 + 6); }
+  // the mark
+  font("700 15px " + CARD.cond, 2.2); g.fillStyle = C.ink; put("GYM", PAD, H - PAD + 4); const mw = width("GYM"); g.fillStyle = C.accent; g.fillRect(PAD + mw + 1, H - PAD - .5, 4.5, 4.5);
+  return cv;
+}
+let SHARE = null;         // { file, url, can } while the card is on the screen
+function shareWorkout(i) {
+  const w = S.workouts[i]; if (!w) return; closeShare(); $("#toast").classList.remove("on");       // nothing of the page may sit on the picture
+  let file, url;
+  try {
+    const data = drawShareCard(w).toDataURL("image/png"), bin = atob(data.slice(data.indexOf(",") + 1)), u8 = new Uint8Array(bin.length);
+    for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k);
+    const d = new Date(w.startedAt), stamp = isNaN(d) ? "" : "-" + d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+    file = new File([u8], (w.name || "workout").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + stamp + ".png", { type: "image/png" }); url = URL.createObjectURL(file);
+  } catch (e) { return toast("Could not draw the card: " + (e.message || e), 5000); }
+  let can = false; try { can = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) {}
+  SHARE = { file, url, can };
+  const el = document.createElement("div"); el.id = "share"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Share card");
+  el.innerHTML = '<div class="pic" data-act="share-bare" role="button" tabindex="0" aria-label="Hide or show the buttons"><img alt="' + esc((w.name || "Workout") + ", " + day(w.startedAt)) + '" src="' + url + '"></div>' +
+    '<div class="share-ui"><p class="fine">' + (can ? "Tap the card to hide these buttons." : "Sharing a picture is not available in this browser. Tap the card to hide these buttons and take a screenshot, or press and hold the card to save it.") + "</p>" +
+    '<div class="' + (can ? "row2" : "") + '">' + (can ? '<button class="btn ink" data-act="share-send">' + ICON.share + "Share</button>" : "") + '<button class="btn quiet" data-act="share-close">Done</button></div></div>';
+  document.body.appendChild(el); document.documentElement.classList.add("sharing");
+  if (can) sendShare();
+}
+// Straight from a tap only: the share sheet will not open otherwise.
+function sendShare() {
+  if (!SHARE || !SHARE.can) return;
+  navigator.share({ files: [SHARE.file] }).catch(e => { if (e && e.name !== "AbortError") toast("The share sheet did not open. Tap Share again, or screenshot the card.", 5000); });
+}
+function closeShare() {
+  const el = $("#share"); if (el) el.remove(); document.documentElement.classList.remove("sharing");
+  if (SHARE) { URL.revokeObjectURL(SHARE.url); SHARE = null; }
 }
 
 /* ---------- progress: the whole history in pictures ----------
@@ -1117,6 +1243,10 @@ document.addEventListener("click", ev => {
   if (act === "timer-toggle") { T.open = !T.open; return renderDock(); }
   if (act === "timer-stop") { ev.stopPropagation(); return stopRest(); }
   if (act === "timer-add") { if (T.state === "run") { T.endAt += 30000; T.total += 30; tickRest(); } return; }
+  if (act === "share") return shareWorkout(+b.dataset.i);
+  if (act === "share-send") return sendShare();
+  if (act === "share-close") return closeShare();
+  if (act === "share-bare") { const el = $("#share"); if (el) el.classList.toggle("bare"); $("#toast").classList.remove("on"); return; }
   if (act === "delete") { const i = +b.dataset.i, w = S.workouts[i]; if (w && confirm("Delete " + (w.name || "this workout") + " from " + day(w.startedAt) + "? This cannot be undone.")) { S.workouts.splice(i, 1); save(); go("#/history"); toast("Deleted"); } return; }
   if (act === "copy-save") { if (SAVE) copyText(SAVE.text).then(ok => { if (ok) { markBackup(); toast("Save code copied · " + SAVE.chars.toLocaleString() + " letters"); } else { selectNode($("#save-text")); toast("Copy failed — the text is selected, copy it by hand.", 5000); } }); return; }
   if (act === "save-image") return makeSaveImages();
@@ -1148,6 +1278,7 @@ function toNextLift(i) {
   if (el) setTimeout(() => el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth", block: "start" }), 280);
 }
 document.addEventListener("keydown", ev => { if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches('label.btn,[role="button"]')) { ev.preventDefault(); ev.target.click(); } });
+document.addEventListener("keydown", ev => { if (ev.key === "Escape" && SHARE) closeShare(); });
 // A keyboard with a return key: weight -> reps -> check.
 document.addEventListener("keydown", ev => {
   const el = ev.target; if (ev.key !== "Enter" || view !== "session" || !el.matches(".set input")) return;

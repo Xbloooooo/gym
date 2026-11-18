@@ -98,6 +98,26 @@ It is in the accent colour when the load went up, or the load held and reps (or 
 lower pin counts as up. The page shows only what was lifted, so a workout restored from a save code looks the same
 as one logged on the phone.
 
+## Share card
+
+One picture of one workout, for sending to someone. **Share** is in the bar of a workout's page and at its foot, and
+on every row of the History list; finishing a session opens the new workout's page, so it is one tap away.
+
+- **On it**: weekday, date and gym (Home, Office gym, EoS); the workout's name; minutes, sets and volume; then one
+  line per lift with its sets as small tiles carrying the marks above (dumbbells for per hand, a weight block,
+  parentheses for an assist pin), the best set marked. Three sets or fewer sit beside the name; more go on a line
+  under it.
+- **Not on it**: lifts with nothing checked, the change tags, the note, the save code.
+- **Size**: 420 wide, as tall as it needs. Ten lifts of two or three sets come to about 815, inside one iPhone Air
+  screen; past 900 the rows tighten, and whatever the height, the picture is scaled to fit the screen.
+- **Sharing**: the card is drawn on a canvas at 3× in the theme's colours, light or dark as the page is, and handed
+  to the phone's share sheet as a PNG (`navigator.share` with a file). It is drawn inside the tap with nothing
+  awaited, because the sheet only opens straight from a tap. The card stays on screen behind the sheet.
+- **Where a browser cannot share a file**, the card is shown full screen: tap it to hide the buttons and take a
+  screenshot, or press and hold it to save it.
+
+It is drawn from the log at the moment of the tap; nothing is stored for it and nothing about the save code changes.
+
 ## Progress
 
 History → Progress: the whole log in pictures, for all gyms or one (the chips at the top).
@@ -130,12 +150,12 @@ one dot with "the line starts with the next one"; with none, the page says so an
 
 ## Backup
 
-The page hands out one thing: the save code. There is no plain-text summary to copy any more; a workout can still be
-read on its History page, and a code is turned back into readable workouts with `tools/decode.js` (below).
+The page hands out the log as one thing: the save code. There is no plain-text summary to copy; a single workout can
+be sent as a picture (Share card, above) and read on its History page, and a code is turned back into readable workouts with `tools/decode.js` (below).
 
 - **Finish copies the code.** Finishing a session puts the current code, the whole history with the new workout in
   it, on the clipboard. Each one replaces the one before, so only the newest needs keeping. If the copy is refused
-  the page opens Backup with the code selected.
+  the page opens Backup with the code selected. Otherwise it opens the workout just saved, where Share is.
 
 History → Backup & restore.
 
