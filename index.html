@@ -213,6 +213,60 @@ h1,h2,h3,p{margin:0}
 .wk-sets .best span{color:var(--ink)}
 .wk-rest{margin:18px 2px 0;font-size:14.5px;line-height:1.55;color:var(--muted)}
 .wk-rest b{display:block;margin-bottom:5px}
+/* ---------- progress ---------- */
+.tabs{display:grid;grid-template-columns:1fr 1fr;margin-top:16px;border:1.5px solid var(--ink);border-radius:12px;overflow:hidden}
+.tabs a{display:grid;place-items:center;min-height:44px;font:700 15px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;text-decoration:none;color:var(--ink)}
+.tabs a.on{background:var(--ink);color:var(--bg)}
+.chips{display:flex;gap:8px;margin-top:12px}
+.chip{flex:1 1 0;min-width:0;min-height:44px;padding:0 8px;border:1px solid var(--line);border-radius:999px;background:none;font:600 13px/1 var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.on{border-color:var(--ink);background:var(--raised);color:var(--ink)}
+.pg svg{display:block;width:100%;height:auto;overflow:visible}
+.pg text{font:600 11px var(--cond);letter-spacing:.1em;text-transform:uppercase;fill:var(--muted);font-variant-numeric:tabular-nums}
+.pg .s-val{font:700 15px var(--cond);letter-spacing:.02em;text-transform:none;fill:var(--ink)}
+.pg .b-n{fill:var(--ink)}
+.pg .b-0{fill:var(--faint)}
+.c-cell{fill:var(--surface);stroke:var(--line);stroke-width:1}
+.c-l1,.c-l2,.c-l3{fill:var(--accent);stroke:none}
+.c-l1{fill-opacity:.36}
+.c-l2{fill-opacity:.66}
+.c-now{stroke:var(--ink);stroke-width:1.5}
+.b-bar{fill:var(--ink)}
+.b-now{fill:var(--accent)}
+.g-line{stroke:var(--line);stroke-width:1}
+.g-base{stroke:var(--ink);stroke-width:1.5}
+.g-lead{stroke:var(--faint);stroke-width:1;stroke-dasharray:2 3}
+.s-line{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.s-line.s1{stroke-dasharray:7 5}
+.s-line.s2{stroke-dasharray:1 5}
+.s-dot{fill:var(--bg);stroke:var(--ink);stroke-width:2}
+.s-last{fill:var(--accent);stroke:var(--bg);stroke-width:2}
+.pg-cap{display:flex;justify-content:space-between;gap:12px;margin-top:10px;font-size:14px;line-height:1.35;color:var(--muted);font-variant-numeric:tabular-nums}
+.pg-cap span:first-child{color:var(--ink)}
+.pg-cap span+span{flex:none;text-align:right}
+.pg-key{display:flex;align-items:center;gap:4px}
+.pg-key i{width:11px;height:11px;border-radius:3px;background:var(--accent)}
+.pg-key .k1{margin-left:3px;opacity:.36}
+.pg-key .k2{opacity:.66}
+.pg-key .k3{margin-right:3px}
+.pg-none{margin-top:18px;padding:16px;border:1px dashed var(--line);border-radius:14px;font-size:15.5px;line-height:1.4;color:var(--muted)}
+.pg-pick{position:relative}
+.pg-pick::after{content:"";position:absolute;right:18px;top:50%;width:9px;height:9px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.pg-pick select{width:100%;min-height:52px;padding:0 44px 0 14px;border:1.5px solid var(--ink);border-radius:12px;background:var(--raised);color:var(--ink);font:700 19px/1.1 var(--cond);letter-spacing:.03em;text-transform:uppercase;-webkit-appearance:none;appearance:none}
+.pg .chips.two{margin:10px 0 6px}
+.pg-leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:13.5px;color:var(--muted)}
+.pg-leg span{display:flex;align-items:center;gap:6px}
+.pg-leg svg{width:26px;height:8px}
+.pg .fine{margin:8px 0 0}
+#pg-lift{scroll-margin-top:calc(84px + env(safe-area-inset-top))}
+.lrow{display:grid;grid-template-columns:1fr auto 76px;gap:12px;align-items:center;width:100%;min-height:62px;padding:10px 2px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left}
+.lrow b{display:block;font:600 18px/1.1 var(--cond);letter-spacing:.02em;text-transform:uppercase}
+.lrow small{display:block;margin-top:4px;font-size:13.5px;color:var(--muted)}
+.lrow .v{text-align:right;white-space:nowrap}
+.lrow .v b{font-weight:700;font-variant-numeric:tabular-nums;text-transform:none}
+.lrow .v small{font:600 12px/1 var(--cond);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.lrow .v small.up{color:var(--accent)}
+.lrow svg{width:76px;height:26px}
+.lrow .s-line{stroke-width:1.75}
 .stack>*+*{margin-top:10px}
 
 /* ---------- backup ---------- */
@@ -251,7 +305,7 @@ input[type=file]{display:none}
    defaultWeight / defaultReps / target / note, the routine blurb,
    and TARGETS below.
    ===================================================================== */
-const VERSION = "2026.11.17-17";
+const VERSION = "2026.11.17-18";
 
 // Home targets card. A label written when a session is graded, not computed.
 const TARGETS = {
@@ -668,12 +722,13 @@ window.addEventListener("hashchange", render);
 function render() {
   const h = location.hash.replace(/^#\/?/, ""), parts = h.split("/");
   const prev = view;
-  view = parts[0] === "session" && S.draft ? "session" : parts[0] === "history" ? "history" : parts[0] === "backup" ? "backup" : "home";
+  view = parts[0] === "session" && S.draft ? "session" : parts[0] === "history" ? "history" : parts[0] === "backup" ? "backup" : parts[0] === "progress" ? "progress" : "home";
   clearInterval(clock); clock = null;
   if (prev === "session" && view !== "session") { wakeOff(); stopRest(); }
   if (view === "session") { viewSession(); wakeOn(); }
   else if (view === "history") { parts[1] != null && parts[1] !== "" ? viewWorkout(+parts[1]) : viewHistory(); }
   else if (view === "backup") viewBackup();
+  else if (view === "progress") viewProgress();
   else viewHome();
   renderDock();
   if (prev !== view || view !== "session") window.scrollTo(0, 0);
@@ -775,7 +830,7 @@ function topSet(e, sets) {
   return best;
 }
 function viewHistory() {
-  let h = '<div class="view"><div class="bar"><button class="back" data-act="home">' + ICON.back + 'Home</button><h1>History</h1><span class="side"></span></div>';
+  let h = '<div class="view"><div class="bar"><button class="back" data-act="home">' + ICON.back + 'Home</button><h1>History</h1><span class="side"></span></div>' + histTabs("log");
   if (!S.workouts.length) h += '<p class="empty">No workouts saved on this phone yet.</p>';
   for (let i = S.workouts.length - 1; i >= 0; i--) {
     const w = S.workouts[i], m = minutes(w), v = volume(w);
@@ -826,6 +881,133 @@ function viewWorkout(i) {
   app.innerHTML = h + '<div class="sec"><button class="btn quiet danger" data-act="delete" data-i="' + i + '">Delete this workout</button></div></div>';
 }
 
+/* ---------- progress: the whole history in pictures ----------
+   Four things, all for one gym or all of them: how often (a calendar of training days), how much (volume per week
+   with the number of sessions under each bar), how one lift is moving (its best set over time, one line per card,
+   because loads do not carry between gyms), and every lift at a glance (latest best set, change since its first
+   log, a small trend). Drawn as inline SVG from the log on the phone; nothing is stored for it.
+   An assisted lift is drawn upside down: a lower pin is less help, so the line going up is always progress. */
+let PG = { lane: "all", lift: "", mode: "top" };
+const WEEKS = 16, DAY = 86400000;
+const mondayOf = ms => { const d = new Date(ms); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.getTime(); };
+const dayOf = ms => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const shortDate = ms => new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const kfmt = n => n >= 100000 ? Math.round(n / 1000) + "k" : lbs(n);
+const f1 = n => (Math.round(n * 10) / 10).toFixed(1);
+function progressData(lane) {
+  const ws = S.workouts.filter(w => !isNaN(Date.parse(w.startedAt)) && (lane === "all" || laneOf(w.routineId).key === lane)), lifts = new Map();
+  for (const w of ws) for (const e of w.exercises || []) {
+    const sets = e.skipped ? [] : (e.sets || []).filter(x => x && x.done); if (!sets.length) continue;
+    const b = sets[topSet(e, sets)], e1 = Math.max(0, ...sets.map(x => num(x.w) != null && num(x.r) ? num(x.w) * (1 + num(x.r) / 30) : 0));
+    let L = lifts.get(e.name); if (!L) lifts.set(e.name, L = { name: e.name, log: e.log || "", cards: new Map(), n: 0 });
+    let c = L.cards.get(w.routineId); if (!c) L.cards.set(w.routineId, c = { name: (routine(w.routineId) || {}).name || w.name || w.routineId, pts: [] });
+    c.pts.push({ t: Date.parse(w.startedAt), w: num(b.w), r: num(b.r), e1: e1 || null, label: (str(b.w) || (e.log === "bodyweight" ? "BW" : "—")) + " × " + (str(b.r) || "—") }); L.n++;
+  }
+  const list = [...lifts.values()].sort((a, b) => b.n - a.n);          // most logged first; ties stay in the order they were first done
+  for (const L of list) {
+    L.kind = L.log === "assist" ? "assist" : [...L.cards.values()].some(c => c.pts.some(p => p.w != null)) ? "load" : "reps";
+    L.cards = [...L.cards.values()].sort((a, b) => b.pts.length - a.pts.length);
+  }
+  return { ws, lifts: list, now: Math.max(Date.now(), ...ws.map(w => Date.parse(w.startedAt))) };
+}
+// What a point is worth on the chart: reps for a lift without loads, the pin for an assisted one, else the weight or the estimate.
+const liftVal = (p, kind, mode) => kind === "reps" ? p.r : kind === "assist" ? p.w : mode === "e1" ? p.e1 : p.w;
+const seriesOf = (L, mode) => L.cards.map(c => ({ name: c.name, pts: c.pts.map(p => ({ t: p.t, v: liftVal(p, L.kind, mode), label: p.label })).filter(p => p.v != null) })).filter(s => s.pts.length);
+function liftChange(L) {            // first log -> latest, on the card this lift is done most on
+  const p = L.cards[0].pts, a = p[0], b = p[p.length - 1];
+  if (p.length < 2) return { text: "New", up: false };
+  const dw = a.w != null && b.w != null ? b.w - a.w : 0, dr = (b.r || 0) - (a.r || 0), sign = v => (v > 0 ? "+" : "−") + tidy(Math.abs(v));
+  const load = L.kind === "assist" ? -dw : dw;
+  return { text: dw ? sign(dw) + (L.kind === "assist" ? " pin" : " lb") : dr ? sign(dr) + (Math.abs(dr) === 1 ? " rep" : " reps") : "Level", up: load > 0 || (!load && dr > 0) };
+}
+const weekList = now => Array.from({ length: WEEKS }, (_, k) => { const d = new Date(mondayOf(now)); d.setDate(d.getDate() - 7 * (WEEKS - 1 - k)); return d.getTime(); });
+const GUT = 22, GAP = 4, VB = 384, CELL = (VB - GUT - (WEEKS - 1) * GAP) / WEEKS, colX = k => GUT + k * (CELL + GAP);
+function calendarSVG(ws, now) {
+  const weeks = weekList(now), today = dayOf(now), top = 18, sets = new Map(); let days = 0, s = "";
+  for (const w of ws) { const d = dayOf(Date.parse(w.startedAt)); sets.set(d, (sets.get(d) || 0) + doneSets(w)); }
+  weeks.forEach((m, k) => {
+    const mo = new Date(m).getMonth(), next = k + 1 < WEEKS ? new Date(weeks[k + 1]).getMonth() : mo;
+    if (k ? mo !== new Date(weeks[k - 1]).getMonth() : mo === next) s += '<text x="' + colX(k) + '" y="10">' + esc(new Date(m).toLocaleDateString(undefined, { month: "short" })) + "</text>";
+    for (let r = 0; r < 7; r++) {
+      const d = new Date(m); d.setDate(d.getDate() + r); const t = d.getTime(); if (t > today) continue;
+      const n = sets.get(t) || 0; if (n) days++;
+      s += '<rect class="c-cell' + (n ? n > 18 ? " c-l3" : n > 10 ? " c-l2" : " c-l1" : "") + (t === today ? " c-now" : "") + '" x="' + colX(k).toFixed(1) + '" y="' + (top + r * (CELL + GAP)).toFixed(1) + '" width="' + CELL.toFixed(1) + '" height="' + CELL.toFixed(1) + '" rx="4"/>';
+    }
+  });
+  ["M", "W", "F"].forEach((l, i) => { s += '<text x="0" y="' + (top + i * 2 * (CELL + GAP) + CELL / 2 + 4).toFixed(1) + '">' + l + "</text>"; });
+  return { days, svg: '<svg viewBox="0 0 ' + VB + " " + (top + 7 * (CELL + GAP) - GAP + 1).toFixed(0) + '" role="img" aria-label="Training days, last ' + WEEKS + " weeks: " + days + '">' + s + "</svg>" };
+}
+function weekBarsSVG(ws, now) {
+  const weeks = weekList(now), vol = weeks.map(() => 0), cnt = weeks.map(() => 0), top = 20, h = 92, base = top + h; let s = "";
+  for (const w of ws) { const k = weeks.indexOf(mondayOf(Date.parse(w.startedAt))); if (k >= 0) { vol[k] += volume(w); cnt[k]++; } }
+  const max = Math.max(...vol), best = vol.indexOf(max);
+  s += '<line class="g-line" x1="' + GUT + '" x2="' + VB + '" y1="' + top + '" y2="' + top + '"/>';
+  weeks.forEach((m, k) => {
+    const bh = max ? vol[k] / max * h : 0, x = colX(k);
+    s += vol[k] ? '<rect class="' + (k === WEEKS - 1 ? "b-now" : "b-bar") + '" x="' + x.toFixed(1) + '" y="' + (base - Math.max(3, bh)).toFixed(1) + '" width="' + CELL.toFixed(1) + '" height="' + Math.max(3, bh).toFixed(1) + '" rx="3"/>' : "";
+    s += '<text class="' + (cnt[k] ? "b-n" : "b-0") + '" text-anchor="middle" x="' + (x + CELL / 2).toFixed(1) + '" y="' + (base + 15) + '">' + (cnt[k] || "·") + "</text>";
+  });
+  if (max) s += '<text class="s-val" text-anchor="' + (best > WEEKS - 3 ? "end" : best < 2 ? "start" : "middle") + '" x="' + (best > WEEKS - 3 ? colX(best) + CELL : best < 2 ? colX(best) : colX(best) + CELL / 2).toFixed(1) + '" y="' + (top - 6) + '">' + lbs(max) + "</text>";
+  s += '<line class="g-base" x1="' + GUT + '" x2="' + VB + '" y1="' + base + '" y2="' + base + '"/><text x="' + GUT + '" y="' + (base + 32) + '">' + esc(shortDate(weeks[0])) + '</text><text text-anchor="end" x="' + VB + '" y="' + (base + 32) + '">Week of ' + esc(shortDate(weeks[WEEKS - 1])) + "</text>";
+  return { max, now: vol[WEEKS - 1], last4: cnt.slice(-4).reduce((a, b) => a + b, 0), svg: '<svg viewBox="0 0 ' + VB + " " + (base + 36) + '" role="img" aria-label="Volume per week, last ' + WEEKS + ' weeks">' + s + "</svg>" };
+}
+function lineChartSVG(series, kind, mode) {
+  const W = VB, H = 204, L = 38, R = 16, T = 34, B = 26, all = series.flatMap(s => s.pts), vs = all.map(p => p.v), ts = all.map(p => p.t), flip = kind === "assist";
+  const min = Math.min(...vs), max = Math.max(...vs), pad = Math.max((max - min) * .2, kind === "reps" ? 1 : 2.5), lo = min - pad, hi = max + pad, t0 = Math.min(...ts), t1 = Math.max(...ts);
+  const x = t => t1 === t0 ? L + (W - L - R) / 2 : L + (t - t0) / (t1 - t0) * (W - L - R), y = v => { const f = (v - lo) / (hi - lo); return T + (flip ? f : 1 - f) * (H - T - B); };
+  const fmt = v => kind === "load" && mode === "e1" ? String(Math.round(v)) : tidy(Math.round(v * 2) / 2);
+  let s = "";
+  [...new Set(min === max ? [min] : [min, kind === "reps" ? Math.round((min + max) / 2) : (min + max) / 2, max])].forEach(v => { s += '<line class="g-line" x1="' + L + '" x2="' + (W - R + 8) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '"/><text text-anchor="end" x="' + (L - 8) + '" y="' + (y(v) + 4).toFixed(1) + '">' + fmt(v) + "</text>"; });
+  series.forEach((sr, i) => {
+    if (sr.pts.length > 1) s += '<path class="s-line s' + Math.min(i, 2) + '" d="' + sr.pts.map((p, k) => (k ? "L" : "M") + x(p.t).toFixed(1) + " " + y(p.v).toFixed(1)).join(" ") + '"/>';
+    sr.pts.forEach((p, k) => { const last = k === sr.pts.length - 1; s += '<circle class="' + (last && !i ? "s-last" : "s-dot") + '" cx="' + x(p.t).toFixed(1) + '" cy="' + y(p.v).toFixed(1) + '" r="' + (last && !i ? 5 : sr.pts.length > 24 ? 2 : 3.2) + '"/>'; });
+  });
+  const lp = series[0].pts[series[0].pts.length - 1], lx = x(lp.t), ly = y(lp.v);
+  s += '<line class="g-lead" x1="' + lx.toFixed(1) + '" x2="' + lx.toFixed(1) + '" y1="20" y2="' + (ly - 8).toFixed(1) + '"/><text class="s-val" text-anchor="' + (lx > W - 60 ? "end" : lx < L + 30 ? "start" : "middle") + '" x="' + (lx > W - 60 ? W - R + 8 : lx < L + 30 ? L : lx).toFixed(1) + '" y="14">' + esc(lp.label) + "</text>";
+  s += t1 === t0 ? '<text text-anchor="middle" x="' + x(t0).toFixed(1) + '" y="' + (H - 6) + '">' + esc(shortDate(t0)) + "</text>" :
+    '<text x="' + L + '" y="' + (H - 6) + '">' + esc(shortDate(t0)) + '</text><text text-anchor="end" x="' + (W - R + 8) + '" y="' + (H - 6) + '">' + esc(shortDate(t1)) + "</text>";
+  return '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Best set over time">' + s + "</svg>";
+}
+function sparkSVG(pts, flip) {
+  const W = 76, H = 26, vs = pts.map(p => p.v), min = Math.min(...vs), max = Math.max(...vs), n = pts.length;
+  const x = k => n === 1 ? W - 6 : 5 + k / (n - 1) * (W - 11), y = v => { const f = max === min ? .5 : (v - min) / (max - min); return 5 + (flip ? f : 1 - f) * (H - 10); };
+  return '<svg viewBox="0 0 ' + W + " " + H + '" aria-hidden="true">' + (n > 1 ? '<path class="s-line" d="' + pts.map((p, k) => (k ? "L" : "M") + x(k).toFixed(1) + " " + y(p.v).toFixed(1)).join(" ") + '"/>' : '<line class="g-line" x1="5" x2="' + (W - 12) + '" y1="' + H / 2 + '" y2="' + H / 2 + '"/>') +
+    '<circle class="s-last" cx="' + x(n - 1).toFixed(1) + '" cy="' + y(pts[n - 1].v).toFixed(1) + '" r="3.6"/></svg>';
+}
+const histTabs = on => '<nav class="tabs"><a href="#/history"' + (on === "log" ? ' class="on" aria-current="page"' : "") + '>Log</a><a href="#/progress"' + (on === "progress" ? ' class="on" aria-current="page"' : "") + ">Progress</a></nav>";
+function viewProgress() {
+  const lanes = LANES.filter(l => ROUTINES.some(r => laneOf(r.id).key === l.key) || S.workouts.some(w => laneOf(w.routineId).key === l.key));
+  if (PG.lane !== "all" && !lanes.some(l => l.key === PG.lane)) PG.lane = "all";
+  const D = progressData(PG.lane), cal = calendarSVG(D.ws, D.now), bars = weekBarsSVG(D.ws, D.now), where = PG.lane === "all" ? "" : " at " + (lanes.find(l => l.key === PG.lane).venue || "this gym");
+  const first = D.ws.length ? Math.min(...D.ws.map(w => Date.parse(w.startedAt))) : D.now, span = Math.min(4, Math.max(1, Math.ceil((D.now - mondayOf(first) + 1) / (7 * DAY))));
+  let h = '<div class="view"><div class="bar"><button class="back" data-act="home">' + ICON.back + 'Home</button><h1>History</h1><span class="side"></span></div>' + histTabs("progress") +
+    '<div class="chips" role="group" aria-label="Gym">' + [{ key: "all", label: "All" }].concat(lanes).map(l => '<button class="chip' + (PG.lane === l.key ? " on" : "") + '" data-act="pg-lane" data-lane="' + l.key + '" aria-pressed="' + (PG.lane === l.key) + '">' + esc(l.key === "all" ? "All" : l.venue || l.label) + "</button>").join("") + "</div>" +
+    '<div class="wk-stats"><div><b>' + D.ws.length + "</b><span>" + (D.ws.length === 1 ? "Workout" : "Workouts") + "</span></div><div><b>" + (D.ws.length ? f1(bars.last4 / span) : "—") + "</b><span>Per week</span></div><div><b>" + (D.ws.length ? kfmt(D.ws.reduce((t, w) => t + volume(w), 0)) : "—") + "</b><span>Volume · lb</span></div></div>";
+  if (!D.ws.length) h += '<p class="pg-none">' + (S.workouts.length ? "No workouts" + esc(where) + " yet. They show up here as soon as one is finished." : "Nothing logged yet. Finish a workout and this page starts to fill in.") + "</p>";
+  h += '<section class="sec pg"><h2>Training days</h2>' + cal.svg + '<p class="pg-cap"><span>' + (cal.days ? plural(cal.days, "day") + " in the last " + WEEKS + " weeks" : "Last " + WEEKS + " weeks") + '</span><span class="pg-key">fewer sets<i class="k1"></i><i class="k2"></i><i class="k3"></i>more</span></p></section>' +
+    '<section class="sec pg"><h2>Volume per week</h2>' + bars.svg + '<p class="pg-cap"><span>' + (bars.max ? "This week " + lbs(bars.now) + " lb · best " + lbs(bars.max) + " lb" : "Pounds lifted each week") + "</span><span>sessions under each bar</span></p></section>";
+  if (D.lifts.length) {
+    const L = D.lifts.find(l => l.name === PG.lift) || D.lifts[0]; let mode = L.kind === "load" ? PG.mode : "top", series = seriesOf(L, mode);
+    if (!series.length && mode === "e1") series = seriesOf(L, mode = "top");
+    const more = Math.max(0, series.length - 3); series = series.slice(0, 3);                  // three lines is what one chart can carry
+    const pick = '<section class="sec pg" id="pg-lift"><h2>Lift progress</h2><div class="pg-pick"><select id="pg-sel" aria-label="Lift">' + D.lifts.map(l => "<option" + (l === L ? " selected" : "") + ' value="' + esc(l.name) + '">' + esc(l.name) + "</option>").join("") + "</select></div>";
+    if (!series.length) h += pick + '<p class="pg-none">No numbers were logged for this lift, so there is nothing to draw.</p></section>';
+    else { const p = series[0].pts, a = p[0], b = p[p.length - 1], days = Math.round((b.t - a.t) / DAY);
+    h += pick +
+      (L.kind === "load" ? '<div class="chips two" role="group" aria-label="Measure"><button class="chip' + (mode === "top" ? " on" : "") + '" data-act="pg-mode" data-mode="top" aria-pressed="' + (mode === "top") + '">Best set</button><button class="chip' + (mode === "e1" ? " on" : "") + '" data-act="pg-mode" data-mode="e1" aria-pressed="' + (mode === "e1") + '">Est. 1RM</button></div>' : "") +
+      lineChartSVG(series, L.kind, mode) +
+      (series.length > 1 ? '<p class="pg-leg">' + series.map((s, i) => '<span><svg viewBox="0 0 26 8" aria-hidden="true"><path class="s-line s' + Math.min(i, 2) + '" d="M1 4 L25 4"/></svg>' + esc(s.name) + "</span>").join("") + (more ? "<span>+ " + plural(more, "more card") + ": pick a gym above</span>" : "") + "</p>" : "") +
+      '<p class="pg-cap"><span>' + (p.length > 1 ? esc(a.label) + " → " + esc(b.label) + " in " + (days < 14 ? plural(Math.max(1, days), "day") : plural(Math.round(days / 7), "week")) + (series.length > 1 ? " (" + esc(series[0].name) + ")" : "") :
+        "One session so far, " + esc(shortDate(a.t)) + ". The line starts with the next one.") + "</span></p>" +
+      '<p class="fine">' + (L.kind === "assist" ? "The number is the assist pin. A lower pin is less help, so the chart is drawn with lower pins higher: up is progress." :
+        L.kind === "reps" ? "No load is logged for this lift, so the chart follows the reps of its best set." :
+        mode === "e1" ? "Estimated one-rep max from the best set of each session: weight × (1 + reps ÷ 30). It moves when either the weight or the reps do." : "The heaviest set of each session; among equal weights, the one with most reps.") + "</p></section>"; }
+    h += '<section class="sec pg"><h2>Every lift</h2>' + D.lifts.map(l => { const sr = seriesOf(l, "top")[0], ch = liftChange(l), lp = l.cards[0].pts[l.cards[0].pts.length - 1];
+        return '<button class="lrow" data-act="pg-lift" data-lift="' + esc(l.name) + '"><span><b>' + esc(l.name) + "</b><small>" + esc(l.cards[0].name) + " · " + plural(l.cards[0].pts.length, "session") + (l.cards.length > 1 ? " · +" + plural(l.cards.length - 1, "card") : "") + '</small></span><span class="v"><b>' + esc(lp.label) + '</b><small' + (ch.up ? ' class="up"' : "") + ">" + esc(ch.text) + "</small></span>" + (sr ? sparkSVG(sr.pts, l.kind === "assist") : "<span></span>") + "</button>"; }).join("") +
+      '<p class="fine" style="margin-top:12px">Latest best set, and the change since the first log on the card the lift is done most on. Tap a lift to chart it.</p></section>';
+  }
+  app.innerHTML = h + "</div>";
+}
 /* ---------- backup ---------- */
 let SAVE = null;          // { lines, text } for the current state, built when the view opens
 let RESTORE = [];         // blocks of raw lines read so far (pasted text or images)
@@ -883,6 +1065,9 @@ document.addEventListener("click", ev => {
   if (act === "share-img") return shareImage(+b.dataset.i);
   if (act === "restore-text") return restoreFromText();
   if (act === "export") return exportJSON();
+  if (act === "pg-lane") { PG.lane = b.dataset.lane; return redraw(); }
+  if (act === "pg-mode") { PG.mode = b.dataset.mode; return redraw(); }
+  if (act === "pg-lift") { PG.lift = b.dataset.lift; render(); const el = $("#pg-lift"); if (el) el.scrollIntoView({ block: "start" }); return; }
 
   const exEl = b.closest(".ex"); if (!exEl || !S.draft) return;
   const i = +exEl.dataset.i, e = S.draft.exercises[i];
@@ -932,6 +1117,7 @@ document.addEventListener("input", ev => {
 document.addEventListener("change", ev => {
   if (ev.target.id === "img-in") { const f = [...ev.target.files]; ev.target.value = ""; if (f.length) restoreFromImages(f); }
   if (ev.target.id === "json-in") { const f = ev.target.files[0]; ev.target.value = ""; if (f) importJSON(f); }
+  if (ev.target.id === "pg-sel") { PG.lift = ev.target.value; redraw(); }
 });
 window.addEventListener("resize", setDock);
 

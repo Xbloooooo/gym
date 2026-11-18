@@ -80,6 +80,27 @@ It is in the accent colour when the load went up, or the load held and reps (or 
 lower pin counts as up. The page shows only what was lifted, so a workout restored from a save code looks the same
 as one logged on the phone.
 
+## Progress
+
+History → Progress: the whole log in pictures, for all gyms or one (the chips at the top).
+
+- **Three numbers**: workouts, sessions per week over the last four weeks (fewer if the log is younger), total volume.
+- **Training days**: the last 16 weeks as a calendar, Monday at the top, one square per day, darker for more sets
+  (up to 10, up to 18, more). Today is outlined.
+- **Volume per week**: the same 16 weeks as bars, the current week in the accent colour, the number of sessions under
+  each bar.
+- **Lift progress**: pick a lift; its best set of each session over time, or the estimated one-rep max
+  (weight × (1 + reps ÷ 30), best over the session's sets). One line per card, because loads do not carry between
+  gyms: solid for the card the lift is done most on, then dashed, then dotted, three at most.
+  An **assisted lift** plots the pin upside down, so a lower pin (less help) is higher and up is always progress.
+  A lift with no load plots the reps of its best set.
+- **Every lift**: latest best set, change since its first log on its main card, and a small trend. Tapping one
+  charts it.
+
+Everything is drawn as inline SVG from the log on the phone at the moment the page opens; nothing is stored for it
+and no chart library is loaded. With one workout the calendar has one square, the week chart one bar and each lift
+one dot with "the line starts with the next one"; with none, the page says so and keeps its shape.
+
 ## Where the log lives
 
 `localStorage["gym_tracker_v1"]` in that one browser, for the `xbloooooo.github.io` origin:
