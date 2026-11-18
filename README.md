@@ -31,7 +31,7 @@ Everything a session reads is at the top of the script in `index.html`:
 When open loads change, change the exercise (`defaultWeight`, `defaultReps`, `target`, `note`), the routine `blurb`
 and `TARGETS` in the same commit. Then:
 
-    node tools/check.js          # syntax check, the cards against the numbered tables, a save-code round trip
+    node tools/check.js          # syntax, cards against the numbered tables, and the fixed codes in tests/fixtures/
     git commit -am "..." && git push
 
 Pages republishes in about a minute. Pages caches for 10 minutes; reload the phone until the version matches.
@@ -247,7 +247,9 @@ what the page reads.
     manifest.webmanifest   name and icons for Add to Home Screen
     fonts/                 Barlow, Barlow Condensed (OFL 1.1), Cousine (Apache 2.0)
     ocr/                   tesseract.js 7.0.0, tesseract.js-core 7.0.0, English data (Apache 2.0); loaded only when an image is read
-    tools/check.js         syntax check, cards against the numbered tables, and a save-code round trip in node
+    tools/check.js         the check to run before every push (what it checks: AGENTS.md)
+    tools/fixtures.js      reads tests/fixtures/ for the check; on main, writes a new fixture for new table lines
+    tests/fixtures/        fixed save codes and what they must read back as; never edited
     tools/decode.js        save code(s) → readable workouts
     tools/page.js          loads the cards and the save-code functions out of index.html for the two tools above
     tools/make_icons.py    redraws the icons
